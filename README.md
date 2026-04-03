@@ -14,9 +14,6 @@ A complete **Power BI analytics project** tracking global fuel prices across 150
 ### Analyse Asie
 ![Analyse Asie](screenshots/dashboard_asie.png)
 
-### Subventions
-![Subventions](screenshots/dashboard_subventions.png)
-
 ### Fiscalité
 ![Fiscalité](screenshots/dashboard_fiscalite.png)
 
