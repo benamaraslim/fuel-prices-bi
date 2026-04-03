@@ -1,0 +1,605 @@
+{
+  "name": "SemanticModel",
+  "compatibilityLevel": 1550,
+  "model": {
+    "culture": "fr-FR",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "expressions": [
+      {
+        "name": "DataPath",
+        "description": "Chemin vers le dossier contenant les fichiers CSV (inclure le backslash final)",
+        "kind": "m",
+        "expression": "\"C:\\\\Users\\\\slimb\\\\Downloads\\\\Compressed\\\\archive_3\\\\\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]",
+        "annotations": [
+          { "name": "PBI_ResultType", "value": "Text" },
+          { "name": "PBI_NavigationStepName", "value": "Navigation" }
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "name": "GlobalFuelPrices",
+        "lineageTag": "c1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c6",
+        "columns": [
+          { "name": "country",                "dataType": "string",   "sourceColumn": "country",                "lineageTag": "col-gfp-01", "summarizeBy": "none" },
+          { "name": "region",                 "dataType": "string",   "sourceColumn": "region",                 "lineageTag": "col-gfp-02", "summarizeBy": "none" },
+          { "name": "iso3",                   "dataType": "string",   "sourceColumn": "iso3",                   "lineageTag": "col-gfp-03", "summarizeBy": "none" },
+          { "name": "gasoline_usd_per_liter", "dataType": "double",   "sourceColumn": "gasoline_usd_per_liter", "lineageTag": "col-gfp-04", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "diesel_usd_per_liter",   "dataType": "double",   "sourceColumn": "diesel_usd_per_liter",   "lineageTag": "col-gfp-05", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "local_currency",         "dataType": "string",   "sourceColumn": "local_currency",         "lineageTag": "col-gfp-06", "summarizeBy": "none" },
+          { "name": "gasoline_local_price",   "dataType": "double",   "sourceColumn": "gasoline_local_price",   "lineageTag": "col-gfp-07", "summarizeBy": "average" },
+          { "name": "diesel_local_price",     "dataType": "double",   "sourceColumn": "diesel_local_price",     "lineageTag": "col-gfp-08", "summarizeBy": "average" },
+          { "name": "price_date",             "dataType": "dateTime", "sourceColumn": "price_date",             "lineageTag": "col-gfp-09", "summarizeBy": "none",    "formatString": "dd/MM/yyyy" },
+          { "name": "is_asian",               "dataType": "int64",    "sourceColumn": "is_asian",               "lineageTag": "col-gfp-10", "summarizeBy": "none" },
+          { "name": "avg_fuel_usd",           "dataType": "double",   "sourceColumn": "avg_fuel_usd",           "lineageTag": "col-gfp-11", "summarizeBy": "average", "formatString": "\\$#,0.000" }
+        ],
+        "partitions": [
+          {
+            "name": "GlobalFuelPrices-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source   = Csv.Document(File.Contents(DataPath & \"global_fuel_prices.csv\"),[Delimiter=\",\",Columns=11,Encoding=65001,QuoteStyle=QuoteStyle.None]),",
+                "    Headers  = Table.PromoteHeaders(Source,[PromoteAllScalars=true]),",
+                "    Typed    = Table.TransformColumnTypes(Headers,{",
+                "        {\"gasoline_usd_per_liter\",type number},{\"diesel_usd_per_liter\",type number},",
+                "        {\"gasoline_local_price\",type number},{\"diesel_local_price\",type number},",
+                "        {\"price_date\",type date},{\"is_asian\",Int64.Type},{\"avg_fuel_usd\",type number}",
+                "    }),",
+                "    Cleaned  = Table.RemoveRowsWithErrors(Typed)",
+                "in",
+                "    Cleaned"
+              ]
+            }
+          }
+        ],
+        "annotations": [{ "name": "PBI_ResultType", "value": "Table" }]
+      },
+      {
+        "name": "AsiaFuelDetailed",
+        "lineageTag": "d2e3f4a5-b6c7-d8e9-f0a1-b2c3d4e5f6a7",
+        "columns": [
+          { "name": "country",                    "dataType": "string",   "sourceColumn": "country",                    "lineageTag": "col-afd-01", "summarizeBy": "none" },
+          { "name": "sub_region",                 "dataType": "string",   "sourceColumn": "sub_region",                 "lineageTag": "col-afd-02", "summarizeBy": "none" },
+          { "name": "iso3",                       "dataType": "string",   "sourceColumn": "iso3",                       "lineageTag": "col-afd-03", "summarizeBy": "none" },
+          { "name": "gasoline_usd_per_liter",     "dataType": "double",   "sourceColumn": "gasoline_usd_per_liter",     "lineageTag": "col-afd-04", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "diesel_usd_per_liter",       "dataType": "double",   "sourceColumn": "diesel_usd_per_liter",       "lineageTag": "col-afd-05", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "lpg_usd_per_kg",             "dataType": "double",   "sourceColumn": "lpg_usd_per_kg",             "lineageTag": "col-afd-06", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "avg_monthly_income_usd",     "dataType": "double",   "sourceColumn": "avg_monthly_income_usd",     "lineageTag": "col-afd-07", "summarizeBy": "average", "formatString": "\\$#,0" },
+          { "name": "fuel_affordability_index",   "dataType": "double",   "sourceColumn": "fuel_affordability_index",   "lineageTag": "col-afd-08", "summarizeBy": "average", "formatString": "#,0.0" },
+          { "name": "oil_import_dependency_pct",  "dataType": "double",   "sourceColumn": "oil_import_dependency_pct",  "lineageTag": "col-afd-09", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "refinery_capacity_kbpd",     "dataType": "int64",    "sourceColumn": "refinery_capacity_kbpd",     "lineageTag": "col-afd-10", "summarizeBy": "sum",     "formatString": "#,0" },
+          { "name": "ev_adoption_pct",            "dataType": "double",   "sourceColumn": "ev_adoption_pct",            "lineageTag": "col-afd-11", "summarizeBy": "average", "formatString": "0.00\\%" },
+          { "name": "fuel_subsidy_active",        "dataType": "boolean",  "sourceColumn": "fuel_subsidy_active",        "lineageTag": "col-afd-12", "summarizeBy": "none" },
+          { "name": "subsidy_cost_bn_usd",        "dataType": "double",   "sourceColumn": "subsidy_cost_bn_usd",        "lineageTag": "col-afd-13", "summarizeBy": "sum",     "formatString": "\\$#,0.0" },
+          { "name": "co2_transport_mt",           "dataType": "double",   "sourceColumn": "co2_transport_mt",           "lineageTag": "col-afd-14", "summarizeBy": "sum",     "formatString": "#,0.0" },
+          { "name": "price_date",                 "dataType": "dateTime", "sourceColumn": "price_date",                 "lineageTag": "col-afd-15", "summarizeBy": "none",    "formatString": "dd/MM/yyyy" },
+          { "name": "gasoline_pct_daily_wage",    "dataType": "double",   "sourceColumn": "gasoline_pct_daily_wage",    "lineageTag": "col-afd-16", "summarizeBy": "average", "formatString": "0.0\\%" }
+        ],
+        "partitions": [
+          {
+            "name": "AsiaFuelDetailed-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source  = Csv.Document(File.Contents(DataPath & \"asia_fuel_prices_detailed.csv\"),[Delimiter=\",\",Columns=16,Encoding=65001,QuoteStyle=QuoteStyle.None]),",
+                "    Headers = Table.PromoteHeaders(Source,[PromoteAllScalars=true]),",
+                "    Typed   = Table.TransformColumnTypes(Headers,{",
+                "        {\"gasoline_usd_per_liter\",type number},{\"diesel_usd_per_liter\",type number},",
+                "        {\"lpg_usd_per_kg\",type number},{\"avg_monthly_income_usd\",type number},",
+                "        {\"fuel_affordability_index\",type number},{\"oil_import_dependency_pct\",type number},",
+                "        {\"refinery_capacity_kbpd\",Int64.Type},{\"ev_adoption_pct\",type number},",
+                "        {\"subsidy_cost_bn_usd\",type number},{\"co2_transport_mt\",type number},",
+                "        {\"price_date\",type date},{\"gasoline_pct_daily_wage\",type number}",
+                "    }),",
+                "    BoolFixed = Table.TransformColumns(Typed,{",
+                "        {\"fuel_subsidy_active\", each _ = \"True\" or _ = true, type logical}",
+                "    })",
+                "in",
+                "    BoolFixed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "SubsidyTracker",
+        "lineageTag": "e3f4a5b6-c7d8-e9f0-a1b2-c3d4e5f6a7b8",
+        "columns": [
+          { "name": "country",                    "dataType": "string",   "sourceColumn": "country",                    "lineageTag": "col-sub-01", "summarizeBy": "none" },
+          { "name": "iso3",                       "dataType": "string",   "sourceColumn": "iso3",                       "lineageTag": "col-sub-02", "summarizeBy": "none" },
+          { "name": "gasoline_subsidized",        "dataType": "boolean",  "sourceColumn": "gasoline_subsidized",        "lineageTag": "col-sub-03", "summarizeBy": "none" },
+          { "name": "diesel_subsidized",          "dataType": "boolean",  "sourceColumn": "diesel_subsidized",          "lineageTag": "col-sub-04", "summarizeBy": "none" },
+          { "name": "subsidy_type",               "dataType": "string",   "sourceColumn": "subsidy_type",               "lineageTag": "col-sub-05", "summarizeBy": "none" },
+          { "name": "annual_subsidy_cost_bn_usd", "dataType": "double",   "sourceColumn": "annual_subsidy_cost_bn_usd", "lineageTag": "col-sub-06", "summarizeBy": "sum",  "formatString": "\\$#,0.0" },
+          { "name": "subsidy_pct_gdp",            "dataType": "double",   "sourceColumn": "subsidy_pct_gdp",            "lineageTag": "col-sub-07", "summarizeBy": "average", "formatString": "0.00\\%" },
+          { "name": "subsidy_description",        "dataType": "string",   "sourceColumn": "subsidy_description",        "lineageTag": "col-sub-08", "summarizeBy": "none" },
+          { "name": "last_price_change",          "dataType": "dateTime", "sourceColumn": "last_price_change",          "lineageTag": "col-sub-09", "summarizeBy": "none", "formatString": "dd/MM/yyyy" },
+          { "name": "pricing_mechanism",          "dataType": "string",   "sourceColumn": "pricing_mechanism",          "lineageTag": "col-sub-10", "summarizeBy": "none" },
+          { "name": "regulator",                  "dataType": "string",   "sourceColumn": "regulator",                  "lineageTag": "col-sub-11", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "SubsidyTracker-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source   = Csv.Document(File.Contents(DataPath & \"asia_subsidy_tracker.csv\"),[Delimiter=\",\",Columns=11,Encoding=65001,QuoteStyle=QuoteStyle.None]),",
+                "    Headers  = Table.PromoteHeaders(Source,[PromoteAllScalars=true]),",
+                "    Typed    = Table.TransformColumnTypes(Headers,{",
+                "        {\"annual_subsidy_cost_bn_usd\",type number},{\"subsidy_pct_gdp\",type number},",
+                "        {\"last_price_change\",type date}",
+                "    }),",
+                "    BoolFixed = Table.TransformColumns(Typed,{",
+                "        {\"gasoline_subsidized\", each _ = \"True\" or _ = true, type logical},",
+                "        {\"diesel_subsidized\",   each _ = \"True\" or _ = true, type logical}",
+                "    })",
+                "in",
+                "    BoolFixed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "CrudeOilAnnual",
+        "lineageTag": "f4a5b6c7-d8e9-f0a1-b2c3-d4e5f6a7b8c9",
+        "columns": [
+          { "name": "year",                  "dataType": "int64",  "sourceColumn": "year",                  "lineageTag": "col-coa-01", "summarizeBy": "none" },
+          { "name": "brent_avg_usd_bbl",     "dataType": "double", "sourceColumn": "brent_avg_usd_bbl",     "lineageTag": "col-coa-02", "summarizeBy": "average", "formatString": "\\$#,0.00" },
+          { "name": "wti_avg_usd_bbl",       "dataType": "double", "sourceColumn": "wti_avg_usd_bbl",       "lineageTag": "col-coa-03", "summarizeBy": "average", "formatString": "\\$#,0.00" },
+          { "name": "brent_yoy_change_pct",  "dataType": "double", "sourceColumn": "brent_yoy_change_pct",  "lineageTag": "col-coa-04", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "wti_yoy_change_pct",    "dataType": "double", "sourceColumn": "wti_yoy_change_pct",    "lineageTag": "col-coa-05", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "key_event",             "dataType": "string", "sourceColumn": "key_event",             "lineageTag": "col-coa-06", "summarizeBy": "none" },
+          { "name": "brent_wti_spread",      "dataType": "double", "sourceColumn": "brent_wti_spread",      "lineageTag": "col-coa-07", "summarizeBy": "average", "formatString": "\\$#,0.00" },
+          { "name": "avg_price_usd_bbl",     "dataType": "double", "sourceColumn": "avg_price_usd_bbl",     "lineageTag": "col-coa-08", "summarizeBy": "average", "formatString": "\\$#,0.00" }
+        ],
+        "partitions": [
+          {
+            "name": "CrudeOilAnnual-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source  = Csv.Document(File.Contents(DataPath & \"crude_oil_annual.csv\"),[Delimiter=\",\",Columns=8,Encoding=65001,QuoteStyle=QuoteStyle.None]),",
+                "    Headers = Table.PromoteHeaders(Source,[PromoteAllScalars=true]),",
+                "    Typed   = Table.TransformColumnTypes(Headers,{",
+                "        {\"year\",Int64.Type},{\"brent_avg_usd_bbl\",type number},{\"wti_avg_usd_bbl\",type number},",
+                "        {\"brent_yoy_change_pct\",type number},{\"wti_yoy_change_pct\",type number},",
+                "        {\"brent_wti_spread\",type number},{\"avg_price_usd_bbl\",type number}",
+                "    })",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "FuelTaxComparison",
+        "lineageTag": "a5b6c7d8-e9f0-a1b2-c3d4-e5f6a7b8c9d0",
+        "columns": [
+          { "name": "country",                 "dataType": "string",  "sourceColumn": "country",                 "lineageTag": "col-ftc-01", "summarizeBy": "none" },
+          { "name": "region",                  "dataType": "string",  "sourceColumn": "region",                  "lineageTag": "col-ftc-02", "summarizeBy": "none" },
+          { "name": "gasoline_tax_pct",        "dataType": "double",  "sourceColumn": "gasoline_tax_pct",        "lineageTag": "col-ftc-03", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "diesel_tax_pct",          "dataType": "double",  "sourceColumn": "diesel_tax_pct",          "lineageTag": "col-ftc-04", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "vat_pct",                 "dataType": "double",  "sourceColumn": "vat_pct",                 "lineageTag": "col-ftc-05", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "excise_usd_per_liter",    "dataType": "double",  "sourceColumn": "excise_usd_per_liter",    "lineageTag": "col-ftc-06", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "carbon_tax_active",       "dataType": "boolean", "sourceColumn": "carbon_tax_active",       "lineageTag": "col-ftc-07", "summarizeBy": "none" },
+          { "name": "total_tax_usd_per_liter", "dataType": "double",  "sourceColumn": "total_tax_usd_per_liter", "lineageTag": "col-ftc-08", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "tax_burden_category",     "dataType": "string",  "sourceColumn": "tax_burden_category",     "lineageTag": "col-ftc-09", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "FuelTaxComparison-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source   = Csv.Document(File.Contents(DataPath & \"fuel_tax_comparison.csv\"),[Delimiter=\",\",Columns=9,Encoding=65001,QuoteStyle=QuoteStyle.None]),",
+                "    Headers  = Table.PromoteHeaders(Source,[PromoteAllScalars=true]),",
+                "    Typed    = Table.TransformColumnTypes(Headers,{",
+                "        {\"gasoline_tax_pct\",type number},{\"diesel_tax_pct\",type number},",
+                "        {\"vat_pct\",type number},{\"excise_usd_per_liter\",type number},",
+                "        {\"total_tax_usd_per_liter\",type number}",
+                "    }),",
+                "    BoolFixed = Table.TransformColumns(Typed,{",
+                "        {\"carbon_tax_active\", each _ = \"True\" or _ = true, type logical}",
+                "    })",
+                "in",
+                "    BoolFixed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "PriceTrendMonthly",
+        "lineageTag": "b6c7d8e9-f0a1-b2c3-d4e5-f6a7b8c9d0e1",
+        "columns": [
+          { "name": "date",                   "dataType": "dateTime", "sourceColumn": "date",                   "lineageTag": "col-ptm-01", "summarizeBy": "none",    "formatString": "dd/MM/yyyy" },
+          { "name": "year",                   "dataType": "int64",    "sourceColumn": "year",                   "lineageTag": "col-ptm-02", "summarizeBy": "none" },
+          { "name": "month",                  "dataType": "int64",    "sourceColumn": "month",                  "lineageTag": "col-ptm-03", "summarizeBy": "none" },
+          { "name": "country",                "dataType": "string",   "sourceColumn": "country",                "lineageTag": "col-ptm-04", "summarizeBy": "none" },
+          { "name": "region",                 "dataType": "string",   "sourceColumn": "region",                 "lineageTag": "col-ptm-05", "summarizeBy": "none" },
+          { "name": "gasoline_usd_per_liter", "dataType": "double",   "sourceColumn": "gasoline_usd_per_liter", "lineageTag": "col-ptm-06", "summarizeBy": "average", "formatString": "\\$#,0.000" },
+          { "name": "brent_crude_usd_bbl",    "dataType": "double",   "sourceColumn": "brent_crude_usd_bbl",   "lineageTag": "col-ptm-07", "summarizeBy": "average", "formatString": "\\$#,0.00" },
+          { "name": "mom_change_pct",         "dataType": "double",   "sourceColumn": "mom_change_pct",         "lineageTag": "col-ptm-08", "summarizeBy": "average", "formatString": "0.0\\%" },
+          { "name": "yoy_change_pct",         "dataType": "double",   "sourceColumn": "yoy_change_pct",         "lineageTag": "col-ptm-09", "summarizeBy": "average", "formatString": "0.0\\%" }
+        ],
+        "partitions": [
+          {
+            "name": "PriceTrendMonthly-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source  = Csv.Document(File.Contents(DataPath & \"price_trend_monthly.csv\"),[Delimiter=\",\",Columns=9,Encoding=65001,QuoteStyle=QuoteStyle.None]),",
+                "    Headers = Table.PromoteHeaders(Source,[PromoteAllScalars=true]),",
+                "    Typed   = Table.TransformColumnTypes(Headers,{",
+                "        {\"date\",type date},{\"year\",Int64.Type},{\"month\",Int64.Type},",
+                "        {\"gasoline_usd_per_liter\",type number},{\"brent_crude_usd_bbl\",type number},",
+                "        {\"mom_change_pct\",type number},{\"yoy_change_pct\",type number}",
+                "    })",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "DimDate",
+        "lineageTag": "c7d8e9f0-a1b2-c3d4-e5f6-a7b8c9d0e1f2",
+        "isHidden": false,
+        "columns": [
+          { "name": "Date",       "dataType": "dateTime", "sourceColumn": "Date",      "lineageTag": "col-dd-01", "summarizeBy": "none", "formatString": "dd/MM/yyyy", "isKey": true },
+          { "name": "Year",       "dataType": "int64",    "sourceColumn": "Year",      "lineageTag": "col-dd-02", "summarizeBy": "none" },
+          { "name": "Quarter",    "dataType": "string",   "sourceColumn": "Quarter",   "lineageTag": "col-dd-03", "summarizeBy": "none" },
+          { "name": "Month",      "dataType": "int64",    "sourceColumn": "Month",     "lineageTag": "col-dd-04", "summarizeBy": "none" },
+          { "name": "MonthName",  "dataType": "string",   "sourceColumn": "MonthName", "lineageTag": "col-dd-05", "summarizeBy": "none" },
+          { "name": "MonthYear",  "dataType": "string",   "sourceColumn": "MonthYear", "lineageTag": "col-dd-06", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "DimDate-Partition",
+            "mode": "import",
+            "source": {
+              "type": "calculated",
+              "expression": [
+                "ADDCOLUMNS(",
+                "    CALENDAR(DATE(2015,1,1), DATE(2026,12,31)),",
+                "    \"Year\",       YEAR([Date]),",
+                "    \"Quarter\",    \"T\" & FORMAT(ROUNDUP(MONTH([Date])/3,0),\"0\"),",
+                "    \"Month\",      MONTH([Date]),",
+                "    \"MonthName\",  FORMAT([Date],\"MMMM\"),",
+                "    \"MonthYear\",  FORMAT([Date],\"MMM YYYY\")",
+                ")"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "_Measures",
+        "lineageTag": "d8e9f0a1-b2c3-d4e5-f6a7-b8c9d0e1f2a3",
+        "isHidden": true,
+        "columns": [
+          { "name": "_placeholder", "dataType": "int64", "isHidden": true, "sourceColumn": "Value", "lineageTag": "col-msr-01", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "_Measures-Partition",
+            "mode": "import",
+            "source": {
+              "type": "calculated",
+              "expression": "{ 0 }"
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Avg Gasoline Global",
+            "lineageTag": "msr-001",
+            "expression": "AVERAGEX(GlobalFuelPrices, GlobalFuelPrices[gasoline_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Avg Diesel Global",
+            "lineageTag": "msr-002",
+            "expression": "AVERAGEX(GlobalFuelPrices, GlobalFuelPrices[diesel_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Median Gasoline Global",
+            "lineageTag": "msr-003",
+            "expression": "MEDIANX(GlobalFuelPrices, GlobalFuelPrices[gasoline_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Max Gasoline Price",
+            "lineageTag": "msr-004",
+            "expression": "MAXX(GlobalFuelPrices, GlobalFuelPrices[gasoline_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Min Gasoline Price",
+            "lineageTag": "msr-005",
+            "expression": "MINX(GlobalFuelPrices, GlobalFuelPrices[gasoline_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Price Range",
+            "lineageTag": "msr-006",
+            "expression": "[Max Gasoline Price] - [Min Gasoline Price]",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Countries Count",
+            "lineageTag": "msr-007",
+            "expression": "DISTINCTCOUNT(GlobalFuelPrices[country])",
+            "formatString": "#,0",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Most Expensive Country",
+            "lineageTag": "msr-008",
+            "expression": "CALCULATE(FIRSTNONBLANK(GlobalFuelPrices[country],1), TOPN(1, GlobalFuelPrices, GlobalFuelPrices[gasoline_usd_per_liter], DESC))",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Cheapest Country",
+            "lineageTag": "msr-009",
+            "expression": "CALCULATE(FIRSTNONBLANK(GlobalFuelPrices[country],1), TOPN(1, GlobalFuelPrices, GlobalFuelPrices[gasoline_usd_per_liter], ASC))",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Region Avg Gasoline",
+            "lineageTag": "msr-010",
+            "expression": "CALCULATE([Avg Gasoline Global], ALLEXCEPT(GlobalFuelPrices, GlobalFuelPrices[region]))",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Country Gasoline Rank",
+            "lineageTag": "msr-011",
+            "expression": "RANKX(ALL(GlobalFuelPrices[country]), [Avg Gasoline Global],, DESC, DENSE)",
+            "formatString": "#,0",
+            "displayFolder": "01 - KPIs Globaux"
+          },
+          {
+            "name": "Total Subsidy Cost Bn USD",
+            "lineageTag": "msr-012",
+            "expression": "SUMX(FILTER(SubsidyTracker, SubsidyTracker[annual_subsidy_cost_bn_usd] > 0), SubsidyTracker[annual_subsidy_cost_bn_usd])",
+            "formatString": "\\$#,0.0",
+            "displayFolder": "02 - Subventions"
+          },
+          {
+            "name": "Subsidized Countries Count",
+            "lineageTag": "msr-013",
+            "expression": "CALCULATE(COUNTROWS(SubsidyTracker), SubsidyTracker[gasoline_subsidized] = TRUE() || SubsidyTracker[diesel_subsidized] = TRUE())",
+            "formatString": "#,0",
+            "displayFolder": "02 - Subventions"
+          },
+          {
+            "name": "Avg Subsidy Pct GDP",
+            "lineageTag": "msr-014",
+            "expression": "AVERAGEX(FILTER(SubsidyTracker, SubsidyTracker[subsidy_pct_gdp] > 0), SubsidyTracker[subsidy_pct_gdp])",
+            "formatString": "0.00\\%",
+            "displayFolder": "02 - Subventions"
+          },
+          {
+            "name": "Deregulated Countries",
+            "lineageTag": "msr-015",
+            "expression": "CALCULATE(COUNTROWS(SubsidyTracker), SubsidyTracker[subsidy_type] IN {\"Deregulated\", \"None\"})",
+            "formatString": "#,0",
+            "displayFolder": "02 - Subventions"
+          },
+          {
+            "name": "Avg Gasoline Tax Pct",
+            "lineageTag": "msr-016",
+            "expression": "AVERAGEX(FuelTaxComparison, FuelTaxComparison[gasoline_tax_pct])",
+            "formatString": "0.0\\%",
+            "displayFolder": "03 - Fiscalité"
+          },
+          {
+            "name": "Avg Total Tax Per Liter",
+            "lineageTag": "msr-017",
+            "expression": "AVERAGEX(FuelTaxComparison, FuelTaxComparison[total_tax_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "03 - Fiscalité"
+          },
+          {
+            "name": "Countries With Carbon Tax",
+            "lineageTag": "msr-018",
+            "expression": "CALCULATE(COUNTROWS(FuelTaxComparison), FuelTaxComparison[carbon_tax_active] = TRUE())",
+            "formatString": "#,0",
+            "displayFolder": "03 - Fiscalité"
+          },
+          {
+            "name": "Max Tax Per Liter",
+            "lineageTag": "msr-019",
+            "expression": "MAXX(FuelTaxComparison, FuelTaxComparison[total_tax_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "03 - Fiscalité"
+          },
+          {
+            "name": "Brent Latest",
+            "lineageTag": "msr-020",
+            "expression": "CALCULATE(MAX(CrudeOilAnnual[brent_avg_usd_bbl]), TOPN(1, CrudeOilAnnual, CrudeOilAnnual[year], DESC))",
+            "formatString": "\\$#,0.00",
+            "displayFolder": "04 - Pétrole Brut"
+          },
+          {
+            "name": "WTI Latest",
+            "lineageTag": "msr-021",
+            "expression": "CALCULATE(MAX(CrudeOilAnnual[wti_avg_usd_bbl]), TOPN(1, CrudeOilAnnual, CrudeOilAnnual[year], DESC))",
+            "formatString": "\\$#,0.00",
+            "displayFolder": "04 - Pétrole Brut"
+          },
+          {
+            "name": "Brent WTI Spread Latest",
+            "lineageTag": "msr-022",
+            "expression": "CALCULATE(MAX(CrudeOilAnnual[brent_wti_spread]), TOPN(1, CrudeOilAnnual, CrudeOilAnnual[year], DESC))",
+            "formatString": "\\$#,0.00",
+            "displayFolder": "04 - Pétrole Brut"
+          },
+          {
+            "name": "Brent YoY Latest",
+            "lineageTag": "msr-023",
+            "expression": "CALCULATE(MAX(CrudeOilAnnual[brent_yoy_change_pct]), TOPN(1, CrudeOilAnnual, CrudeOilAnnual[year], DESC))",
+            "formatString": "+0.0\\%;-0.0\\%;0.0\\%",
+            "displayFolder": "04 - Pétrole Brut"
+          },
+          {
+            "name": "Avg Monthly Gasoline",
+            "lineageTag": "msr-024",
+            "expression": "AVERAGEX(PriceTrendMonthly, PriceTrendMonthly[gasoline_usd_per_liter])",
+            "formatString": "\\$#,0.000",
+            "displayFolder": "05 - Tendances"
+          },
+          {
+            "name": "Avg MoM Change",
+            "lineageTag": "msr-025",
+            "expression": "AVERAGEX(FILTER(PriceTrendMonthly, NOT ISBLANK(PriceTrendMonthly[mom_change_pct])), PriceTrendMonthly[mom_change_pct])",
+            "formatString": "+0.0\\%;-0.0\\%;0.0\\%",
+            "displayFolder": "05 - Tendances"
+          },
+          {
+            "name": "Avg YoY Change",
+            "lineageTag": "msr-026",
+            "expression": "AVERAGEX(FILTER(PriceTrendMonthly, NOT ISBLANK(PriceTrendMonthly[yoy_change_pct])), PriceTrendMonthly[yoy_change_pct])",
+            "formatString": "+0.0\\%;-0.0\\%;0.0\\%",
+            "displayFolder": "05 - Tendances"
+          },
+          {
+            "name": "Avg Affordability Index",
+            "lineageTag": "msr-027",
+            "expression": "AVERAGEX(FILTER(AsiaFuelDetailed, NOT ISBLANK(AsiaFuelDetailed[fuel_affordability_index])), AsiaFuelDetailed[fuel_affordability_index])",
+            "formatString": "#,0.0",
+            "displayFolder": "06 - Asie"
+          },
+          {
+            "name": "Avg EV Adoption Pct",
+            "lineageTag": "msr-028",
+            "expression": "AVERAGEX(AsiaFuelDetailed, AsiaFuelDetailed[ev_adoption_pct])",
+            "formatString": "0.00\\%",
+            "displayFolder": "06 - Asie"
+          },
+          {
+            "name": "Total CO2 Transport MT",
+            "lineageTag": "msr-029",
+            "expression": "SUMX(FILTER(AsiaFuelDetailed, NOT ISBLANK(AsiaFuelDetailed[co2_transport_mt])), AsiaFuelDetailed[co2_transport_mt])",
+            "formatString": "#,0.0",
+            "displayFolder": "06 - Asie"
+          },
+          {
+            "name": "Avg Gasoline Pct Daily Wage",
+            "lineageTag": "msr-030",
+            "expression": "AVERAGEX(FILTER(AsiaFuelDetailed, NOT ISBLANK(AsiaFuelDetailed[gasoline_pct_daily_wage])), AsiaFuelDetailed[gasoline_pct_daily_wage])",
+            "formatString": "0.0\\%",
+            "displayFolder": "06 - Asie"
+          },
+          {
+            "name": "Gasoline 3M Moving Avg",
+            "lineageTag": "msr-031",
+            "expression": [
+              "AVERAGEX(",
+              "    FILTER(",
+              "        ALL(PriceTrendMonthly),",
+              "        PriceTrendMonthly[country] = MAX(PriceTrendMonthly[country])",
+              "        && PriceTrendMonthly[date] >= EDATE(MAX(PriceTrendMonthly[date]), -2)",
+              "        && PriceTrendMonthly[date] <= MAX(PriceTrendMonthly[date])",
+              "    ),",
+              "    PriceTrendMonthly[gasoline_usd_per_liter]",
+              ")"
+            ],
+            "formatString": "\\$#,0.000",
+            "displayFolder": "05 - Tendances"
+          },
+          {
+            "name": "Vs Global Avg",
+            "lineageTag": "msr-032",
+            "expression": [
+              "VAR _country = CALCULATE([Avg Gasoline Global])",
+              "VAR _global  = CALCULATE([Avg Gasoline Global], ALL(GlobalFuelPrices))",
+              "RETURN _country - _global"
+            ],
+            "formatString": "+\\$#,0.000;-\\$#,0.000;\\$#,0.000",
+            "displayFolder": "01 - KPIs Globaux"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "Rel_GlobalFuelPrices_AsiaFuelDetailed",
+        "fromTable": "GlobalFuelPrices",
+        "fromColumn": "iso3",
+        "toTable": "AsiaFuelDetailed",
+        "toColumn": "iso3",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "Rel_GlobalFuelPrices_SubsidyTracker",
+        "fromTable": "GlobalFuelPrices",
+        "fromColumn": "iso3",
+        "toTable": "SubsidyTracker",
+        "toColumn": "iso3",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "Rel_GlobalFuelPrices_FuelTaxComparison",
+        "fromTable": "GlobalFuelPrices",
+        "fromColumn": "country",
+        "toTable": "FuelTaxComparison",
+        "toColumn": "country",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "Rel_PriceTrendMonthly_GlobalFuelPrices",
+        "fromTable": "PriceTrendMonthly",
+        "fromColumn": "country",
+        "toTable": "GlobalFuelPrices",
+        "toColumn": "country"
+      }
+    ],
+    "cultures": [
+      {
+        "name": "fr-FR",
+        "linguisticMetadata": {
+          "content": {
+            "Version": "1.0.0",
+            "Language": "fr-FR"
+          },
+          "contentType": "json"
+        }
+      }
+    ],
+    "annotations": [
+      { "name": "PBIDesktopVersion",              "value": "2.130.754.0 (24.11)" },
+      { "name": "__PBI_TimeIntelligenceEnabled",   "value": "0" },
+      { "name": "PBI_QueryOrder",                  "value": "[\"GlobalFuelPrices\",\"AsiaFuelDetailed\",\"SubsidyTracker\",\"CrudeOilAnnual\",\"FuelTaxComparison\",\"PriceTrendMonthly\",\"DimDate\",\"_Measures\"]" }
+    ]
+  }
+}

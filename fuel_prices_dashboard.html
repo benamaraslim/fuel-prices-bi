@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport BI — Prix des Carburants Mondiaux</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f0f2f5;--card:#fff;--hdr:#1a2340;--hdr2:#243060;
+  --accent:#2563eb;--accent2:#10b981;--accent3:#f59e0b;--accent4:#ef4444;
+  --text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --c1:#2563eb;--c2:#10b981;--c3:#f59e0b;--c4:#ef4444;--c5:#8b5cf6;
+  --c6:#06b6d4;--c7:#ec4899;--c8:#f97316;--c9:#84cc16;--c10:#14b8a6;
+  --gap:14px;--r:10px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+     background:var(--bg);color:var(--text);font-size:14px;}
+/* LAYOUT */
+.app{display:flex;min-height:100vh;}
+.sidebar{width:220px;background:var(--hdr);color:#fff;flex-shrink:0;
+         display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sidebar-logo h2{font-size:14px;font-weight:700;color:#fff;line-height:1.3;}
+.sidebar-logo p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.nav-section{padding:12px 0 4px;}
+.nav-section-label{padding:4px 16px;font-size:10px;font-weight:700;
+  color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;
+  cursor:pointer;border-left:3px solid transparent;transition:all .15s;
+  font-size:13px;color:rgba(255,255,255,.7);}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-item.active{background:rgba(37,99,235,.25);border-left-color:var(--accent);color:#fff;}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.main{flex:1;display:flex;flex-direction:column;overflow:auto;}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);
+  padding:12px 20px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:15px;font-weight:700;color:var(--text);}
+.topbar-meta{font-size:12px;color:var(--muted);}
+.page{display:none;padding:20px;}
+.page.active{display:block;}
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.kpi{background:var(--card);border-radius:var(--r);padding:16px 18px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid var(--accent);}
+.kpi.green{border-top-color:var(--accent2);}
+.kpi.amber{border-top-color:var(--accent3);}
+.kpi.red{border-top-color:var(--accent4);}
+.kpi.purple{border-top-color:#8b5cf6;}
+.kpi-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text);line-height:1;}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+/* CHART GRID */
+.chart-grid{display:grid;gap:var(--gap);margin-bottom:var(--gap);}
+.chart-grid.cols2{grid-template-columns:repeat(2,1fr);}
+.chart-grid.cols3{grid-template-columns:repeat(3,1fr);}
+.chart-grid.col21{grid-template-columns:2fr 1fr;}
+.chart-grid.col12{grid-template-columns:1fr 2fr;}
+.chart-card{background:var(--card);border-radius:var(--r);padding:18px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.chart-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;}
+.chart-title span{font-size:11px;font-weight:400;color:var(--muted);margin-left:6px;}
+canvas{max-height:280px;}
+/* TABLE */
+.tbl-wrap{background:var(--card);border-radius:var(--r);padding:18px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);overflow-x:auto;margin-bottom:var(--gap);}
+.tbl-wrap h3{font-size:13px;font-weight:700;margin-bottom:12px;}
+.filters-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.filters-row label{font-size:11px;color:var(--muted);font-weight:600;}
+select{padding:5px 8px;border:1px solid var(--border);border-radius:6px;
+  font-size:12px;background:var(--card);color:var(--text);cursor:pointer;}
+select:focus{outline:none;border-color:var(--accent);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);
+  color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;
+  letter-spacing:.5px;white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--text);}
+tbody td{padding:8px 10px;border-bottom:1px solid #f8fafc;}
+tbody tr:hover{background:#f8fafc;}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge-green{background:#dcfce7;color:#166534;}
+.badge-red{background:#fee2e2;color:#991b1b;}
+.badge-amber{background:#fef3c7;color:#92400e;}
+.badge-blue{background:#dbeafe;color:#1e40af;}
+.badge-gray{background:#f1f5f9;color:#475569;}
+.badge-purple{background:#ede9fe;color:#5b21b6;}
+.bar-inline{display:inline-block;height:8px;border-radius:4px;vertical-align:middle;margin-left:6px;}
+/* FOOTER */
+.dash-footer{background:var(--card);border-top:1px solid var(--border);
+  padding:10px 20px;font-size:11px;color:var(--muted);display:flex;
+  justify-content:space-between;}
+@media(max-width:900px){
+  .sidebar{width:56px;}.sidebar-logo p,.nav-section-label,.nav-item span{display:none;}
+  .chart-grid.cols2,.chart-grid.cols3,.chart-grid.col21,.chart-grid.col12{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h2>Fuel BI Report</h2>
+    <p>Prix Carburants Mondiaux</p>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-label">Rapports</div>
+    <div class="nav-item active" onclick="showPage('overview',this)">
+      <span class="nav-icon">🌍</span><span>Vue Globale</span></div>
+    <div class="nav-item" onclick="showPage('asia',this)">
+      <span class="nav-icon">🗺️</span><span>Analyse Asie</span></div>
+    <div class="nav-item" onclick="showPage('subsidy',this)">
+      <span class="nav-icon">💰</span><span>Subventions</span></div>
+    <div class="nav-item" onclick="showPage('tax',this)">
+      <span class="nav-icon">📊</span><span>Fiscalité</span></div>
+    <div class="nav-item" onclick="showPage('trends',this)">
+      <span class="nav-icon">📈</span><span>Tendances</span></div>
+  </div>
+</nav>
+
+<div class="main">
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title" id="page-title">Vue Globale — Prix des Carburants</div>
+  <div class="topbar-meta">Données au 23 mars 2026 | 61 pays | Sources: OGRA, IEA, World Bank</div>
+</div>
+
+<!-- ========================================================
+     PAGE 1 : VUE GLOBALE
+     ======================================================== -->
+<div class="page active" id="page-overview">
+
+  <div class="filters-row">
+    <label>Région :</label>
+    <select id="ov-region" onchange="overviewFilters()">
+      <option value="all">Toutes les régions</option>
+      <option>South Asia</option><option>East Asia</option>
+      <option>Southeast Asia</option><option>Middle East</option>
+      <option>Europe</option><option>North America</option>
+      <option>South America</option><option>Africa</option>
+      <option>Oceania</option>
+    </select>
+    <label>Carburant :</label>
+    <select id="ov-fuel" onchange="overviewFilters()">
+      <option value="gasoline">Essence</option>
+      <option value="diesel">Diesel</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Moy. mondiale essence</div>
+      <div class="kpi-val" id="kpi-avg-global">—</div>
+      <div class="kpi-sub">USD / litre</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Prix le plus bas</div>
+      <div class="kpi-val" id="kpi-min">—</div>
+      <div class="kpi-sub" id="kpi-min-country">—</div></div>
+    <div class="kpi red"><div class="kpi-lbl">Prix le plus élevé</div>
+      <div class="kpi-val" id="kpi-max">—</div>
+      <div class="kpi-sub" id="kpi-max-country">—</div></div>
+    <div class="kpi amber"><div class="kpi-lbl">Pays suivis</div>
+      <div class="kpi-val" id="kpi-countries">—</div>
+      <div class="kpi-sub">dans le dataset</div></div>
+    <div class="kpi purple"><div class="kpi-lbl">Étendue des prix</div>
+      <div class="kpi-val" id="kpi-range">—</div>
+      <div class="kpi-sub">max − min (USD/L)</div></div>
+  </div>
+
+  <div class="chart-grid col21">
+    <div class="chart-card">
+      <div class="chart-title">Prix essence par pays <span>(USD/L — Top 30 triés)</span></div>
+      <canvas id="chart-country-bar"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Répartition par région <span>(moy. essence)</span></div>
+      <canvas id="chart-region-doughnut"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-grid cols2">
+    <div class="chart-card">
+      <div class="chart-title">Essence vs Diesel par région</div>
+      <canvas id="chart-gas-diesel-region"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Distribution des prix mondiaux <span>(histogramme)</span></div>
+      <canvas id="chart-histogram"></canvas>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <h3>Tableau détaillé — Tous pays</h3>
+    <div id="tbl-overview-wrap"></div>
+  </div>
+</div>
+
+<!-- ========================================================
+     PAGE 2 : ANALYSE ASIE
+     ======================================================== -->
+<div class="page" id="page-asia">
+
+  <div class="filters-row">
+    <label>Sous-région :</label>
+    <select id="as-region" onchange="asiaFilters()">
+      <option value="all">Toutes</option>
+      <option>South Asia</option><option>East Asia</option><option>Southeast Asia</option>
+    </select>
+    <label>Subvention :</label>
+    <select id="as-subsidy" onchange="asiaFilters()">
+      <option value="all">Tous</option>
+      <option value="1">Avec subvention</option>
+      <option value="0">Sans subvention</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Moy. essence Asie</div>
+      <div class="kpi-val" id="kpi-asia-avg">—</div>
+      <div class="kpi-sub">USD / litre</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Moy. affordability</div>
+      <div class="kpi-val" id="kpi-asia-afford">—</div>
+      <div class="kpi-sub">indice (revenus/prix)</div></div>
+    <div class="kpi amber"><div class="kpi-lbl">Adoption VE moy.</div>
+      <div class="kpi-val" id="kpi-asia-ev">—</div>
+      <div class="kpi-sub">% du parc automobile</div></div>
+    <div class="kpi red"><div class="kpi-lbl">Émissions CO₂ transp.</div>
+      <div class="kpi-val" id="kpi-asia-co2">—</div>
+      <div class="kpi-sub">Mt CO₂ (total)</div></div>
+    <div class="kpi purple"><div class="kpi-lbl">% salaire journée</div>
+      <div class="kpi-val" id="kpi-asia-wage">—</div>
+      <div class="kpi-sub">coût 1L essence</div></div>
+  </div>
+
+  <div class="chart-grid col12">
+    <div class="chart-card">
+      <div class="chart-title">Indice d'accessibilité <span>(revenus / prix)</span></div>
+      <canvas id="chart-asia-afford"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Prix essence vs Revenu mensuel moyen</div>
+      <canvas id="chart-asia-scatter"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-grid cols3">
+    <div class="chart-card">
+      <div class="chart-title">Adoption VE (%)</div>
+      <canvas id="chart-asia-ev"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Dépendance import pétrole (%)</div>
+      <canvas id="chart-asia-import"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">% salaire journée / litre essence</div>
+      <canvas id="chart-asia-wage"></canvas>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <h3>Données détaillées — Asie</h3>
+    <div id="tbl-asia-wrap"></div>
+  </div>
+</div>
+
+<!-- ========================================================
+     PAGE 3 : SUBVENTIONS
+     ======================================================== -->
+<div class="page" id="page-subsidy">
+
+  <div class="filters-row">
+    <label>Type subvention :</label>
+    <select id="sub-type" onchange="subsidyFilters()">
+      <option value="all">Tous</option>
+      <option>Full</option><option>Partial</option>
+      <option>Deregulated</option><option>Stabilization</option>
+      <option>Ceiling</option><option>None</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi red"><div class="kpi-lbl">Coût total subventions</div>
+      <div class="kpi-val" id="kpi-sub-total">—</div>
+      <div class="kpi-sub">Milliards USD / an</div></div>
+    <div class="kpi amber"><div class="kpi-lbl">Pays subventionnés</div>
+      <div class="kpi-val" id="kpi-sub-count">—</div>
+      <div class="kpi-sub">essence ou diesel</div></div>
+    <div class="kpi"><div class="kpi-lbl">Moy. % PIB</div>
+      <div class="kpi-val" id="kpi-sub-gdp">—</div>
+      <div class="kpi-sub">coût subvention / PIB</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Pays déréglementés</div>
+      <div class="kpi-val" id="kpi-sub-dereg">—</div>
+      <div class="kpi-sub">prix de marché</div></div>
+  </div>
+
+  <div class="chart-grid cols2">
+    <div class="chart-card">
+      <div class="chart-title">Coût annuel des subventions par pays <span>(Mrd USD)</span></div>
+      <canvas id="chart-sub-cost"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Type de mécanisme de subvention</div>
+      <canvas id="chart-sub-type"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-grid cols2">
+    <div class="chart-card">
+      <div class="chart-title">Subvention en % du PIB</div>
+      <canvas id="chart-sub-gdp"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Prix essence : subventionné vs marché libre</div>
+      <canvas id="chart-sub-price-compare"></canvas>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <h3>Tracker des politiques de subvention</h3>
+    <div id="tbl-sub-wrap"></div>
+  </div>
+</div>
+
+<!-- ========================================================
+     PAGE 4 : FISCALITÉ
+     ======================================================== -->
+<div class="page" id="page-tax">
+
+  <div class="filters-row">
+    <label>Charge fiscale :</label>
+    <select id="tax-cat" onchange="taxFilters()">
+      <option value="all">Toutes</option>
+      <option>Very High</option><option>High</option>
+      <option>Moderate</option><option>Low</option><option>Very Low</option>
+    </select>
+    <label>Région :</label>
+    <select id="tax-region" onchange="taxFilters()">
+      <option value="all">Toutes</option>
+      <option>Europe</option><option>Asia</option><option>North America</option>
+      <option>South America</option><option>Africa</option><option>Oceania</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi red"><div class="kpi-lbl">Taxe max (USD/L)</div>
+      <div class="kpi-val" id="kpi-tax-max">—</div>
+      <div class="kpi-sub" id="kpi-tax-max-country">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">Taxe moy. essence %</div>
+      <div class="kpi-val" id="kpi-tax-avg-pct">—</div>
+      <div class="kpi-sub">tous pays</div></div>
+    <div class="kpi amber"><div class="kpi-lbl">Taxe moy. (USD/L)</div>
+      <div class="kpi-val" id="kpi-tax-avg-usd">—</div>
+      <div class="kpi-sub">excise + TVA</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Pays taxe carbone</div>
+      <div class="kpi-val" id="kpi-tax-carbon">—</div>
+      <div class="kpi-sub">carbon tax active</div></div>
+  </div>
+
+  <div class="chart-grid col21">
+    <div class="chart-card">
+      <div class="chart-title">Taxe totale par litre d'essence (USD) <span>— tri décroissant</span></div>
+      <canvas id="chart-tax-total"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Répartition par catégorie fiscale</div>
+      <canvas id="chart-tax-cat-doughnut"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-grid cols2">
+    <div class="chart-card">
+      <div class="chart-title">Taxe essence vs diesel (% du prix)</div>
+      <canvas id="chart-tax-gasdiesel"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">TVA vs Accise (USD/L) par pays</div>
+      <canvas id="chart-tax-stacked"></canvas>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <h3>Comparaison fiscale internationale</h3>
+    <div id="tbl-tax-wrap"></div>
+  </div>
+</div>
+
+<!-- ========================================================
+     PAGE 5 : TENDANCES
+     ======================================================== -->
+<div class="page" id="page-trends">
+
+  <div class="filters-row">
+    <label>Pays :</label>
+    <select id="trend-country" onchange="trendFilters()">
+      <option value="all">Tous (10 pays)</option>
+      <option>Pakistan</option><option>India</option><option>China</option>
+      <option>Japan</option><option>Thailand</option><option>Malaysia</option>
+      <option>Indonesia</option><option>Saudi Arabia</option>
+      <option>United States</option><option>Germany</option>
+    </select>
+    <label>Période :</label>
+    <select id="trend-year" onchange="trendFilters()">
+      <option value="all">2015-2026</option>
+      <option value="2015,2016,2017,2018,2019">2015-2019</option>
+      <option value="2020,2021,2022">COVID 2020-2022</option>
+      <option value="2023,2024,2025,2026">Post-COVID 2023-2026</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Brent 2026 (moy.)</div>
+      <div class="kpi-val">$92.4</div>
+      <div class="kpi-sub">USD/baril (+33% YoY)</div></div>
+    <div class="kpi red"><div class="kpi-lbl">WTI 2026 (moy.)</div>
+      <div class="kpi-val">$73.6</div>
+      <div class="kpi-sub">Spread Brent-WTI : $18.8</div></div>
+    <div class="kpi amber"><div class="kpi-lbl">Pic historique</div>
+      <div class="kpi-val">$100.9</div>
+      <div class="kpi-sub">Brent 2022 — Guerre Ukraine</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Plus bas historique</div>
+      <div class="kpi-val">$41.8</div>
+      <div class="kpi-sub">Brent 2020 — COVID-19</div></div>
+    <div class="kpi purple"><div class="kpi-lbl">Corrélation Brent/Pompe</div>
+      <div class="kpi-val">r = 0.87</div>
+      <div class="kpi-sub">forte corrélation positive</div></div>
+  </div>
+
+  <div class="chart-grid cols2">
+    <div class="chart-card">
+      <div class="chart-title">Évolution Brent & WTI 2015-2026 <span>(USD/baril)</span></div>
+      <canvas id="chart-crude-annual"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Variation annuelle Brent (YoY %) <span>avec événements clés</span></div>
+      <canvas id="chart-crude-yoy"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-grid cols2">
+    <div class="chart-card">
+      <div class="chart-title">Tendance mensuelle prix essence <span>(pays sélectionnés)</span></div>
+      <canvas id="chart-monthly-trend"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Spread Brent-WTI par année <span>(USD/baril)</span></div>
+      <canvas id="chart-spread"></canvas>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <h3>Données annuelles pétrole brut 2015-2026</h3>
+    <div id="tbl-crude-wrap"></div>
+  </div>
+</div>
+
+<div class="dash-footer">
+  <span>Rapport BI — Prix des Carburants Mondiaux | Données : 23/03/2026</span>
+  <span>Stack : SQL Server · SSIS · Python · DAX · Power BI</span>
+</div>
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════
+// DONNÉES EMBARQUÉES
+// ════════════════════════════════════════════
+const GLOBAL = [
+  {c:"Pakistan",r:"South Asia",iso:"PAK",g:0.82,d:0.84,avg:0.83},
+  {c:"India",r:"South Asia",iso:"IND",g:1.17,d:1.06,avg:1.12},
+  {c:"Bangladesh",r:"South Asia",iso:"BGD",g:1.05,d:0.91,avg:0.98},
+  {c:"Sri Lanka",r:"South Asia",iso:"LKA",g:1.14,d:1.02,avg:1.08},
+  {c:"Nepal",r:"South Asia",iso:"NPL",g:1.19,d:1.08,avg:1.14},
+  {c:"Afghanistan",r:"South Asia",iso:"AFG",g:0.74,d:0.70,avg:0.72},
+  {c:"China",r:"East Asia",iso:"CHN",g:1.24,d:1.08,avg:1.16},
+  {c:"Japan",r:"East Asia",iso:"JPN",g:1.28,d:1.15,avg:1.21},
+  {c:"South Korea",r:"East Asia",iso:"KOR",g:1.42,d:1.26,avg:1.34},
+  {c:"Taiwan",r:"East Asia",iso:"TWN",g:1.04,d:0.88,avg:0.96},
+  {c:"Mongolia",r:"East Asia",iso:"MNG",g:0.98,d:0.95,avg:0.96},
+  {c:"Thailand",r:"Southeast Asia",iso:"THA",g:1.18,d:1.04,avg:1.11},
+  {c:"Malaysia",r:"Southeast Asia",iso:"MYS",g:0.50,d:0.80,avg:0.65},
+  {c:"Indonesia",r:"Southeast Asia",iso:"IDN",g:0.79,d:0.74,avg:0.76},
+  {c:"Vietnam",r:"Southeast Asia",iso:"VNM",g:1.01,d:0.88,avg:0.94},
+  {c:"Philippines",r:"Southeast Asia",iso:"PHL",g:1.14,d:1.02,avg:1.08},
+  {c:"Singapore",r:"Southeast Asia",iso:"SGP",g:1.88,d:1.52,avg:1.70},
+  {c:"Cambodia",r:"Southeast Asia",iso:"KHM",g:1.10,d:1.02,avg:1.06},
+  {c:"Myanmar",r:"Southeast Asia",iso:"MMR",g:0.92,d:0.85,avg:0.88},
+  {c:"Laos",r:"Southeast Asia",iso:"LAO",g:1.15,d:1.01,avg:1.08},
+  {c:"Brunei",r:"Southeast Asia",iso:"BRN",g:0.31,d:0.19,avg:0.25},
+  {c:"Timor-Leste",r:"Southeast Asia",iso:"TLS",g:1.22,d:1.18,avg:1.20},
+  {c:"Saudi Arabia",r:"Middle East",iso:"SAU",g:0.62,d:0.17,avg:0.40},
+  {c:"UAE",r:"Middle East",iso:"ARE",g:0.78,d:0.76,avg:0.77},
+  {c:"Kuwait",r:"Middle East",iso:"KWT",g:0.35,d:0.35,avg:0.35},
+  {c:"Qatar",r:"Middle East",iso:"QAT",g:0.49,d:0.52,avg:0.50},
+  {c:"Bahrain",r:"Middle East",iso:"BHR",g:0.53,d:0.40,avg:0.46},
+  {c:"Oman",r:"Middle East",iso:"OMN",g:0.58,d:0.55,avg:0.56},
+  {c:"Iran",r:"Middle East",iso:"IRN",g:0.05,d:0.02,avg:0.04},
+  {c:"Iraq",r:"Middle East",iso:"IRQ",g:0.55,d:0.47,avg:0.51},
+  {c:"Turkey",r:"Middle East",iso:"TUR",g:1.21,d:1.28,avg:1.25},
+  {c:"Israel",r:"Middle East",iso:"ISR",g:1.93,d:1.86,avg:1.90},
+  {c:"Jordan",r:"Middle East",iso:"JOR",g:1.22,d:0.69,avg:0.96},
+  {c:"United Kingdom",r:"Europe",iso:"GBR",g:1.76,d:1.80,avg:1.78},
+  {c:"Germany",r:"Europe",iso:"DEU",g:1.82,d:1.71,avg:1.76},
+  {c:"France",r:"Europe",iso:"FRA",g:1.92,d:1.78,avg:1.85},
+  {c:"Italy",r:"Europe",iso:"ITA",g:1.88,d:1.72,avg:1.80},
+  {c:"Spain",r:"Europe",iso:"ESP",g:1.59,d:1.48,avg:1.54},
+  {c:"Netherlands",r:"Europe",iso:"NLD",g:2.10,d:1.72,avg:1.91},
+  {c:"Norway",r:"Europe",iso:"NOR",g:2.08,d:1.85,avg:1.96},
+  {c:"Sweden",r:"Europe",iso:"SWE",g:1.78,d:1.95,avg:1.86},
+  {c:"Switzerland",r:"Europe",iso:"CHE",g:1.79,d:1.87,avg:1.83},
+  {c:"Poland",r:"Europe",iso:"POL",g:1.42,d:1.38,avg:1.40},
+  {c:"Russia",r:"Europe",iso:"RUS",g:0.63,d:0.65,avg:0.64},
+  {c:"United States",r:"North America",iso:"USA",g:0.91,d:1.04,avg:0.98},
+  {c:"Canada",r:"North America",iso:"CAN",g:1.22,d:1.32,avg:1.27},
+  {c:"Mexico",r:"North America",iso:"MEX",g:1.17,d:1.11,avg:1.14},
+  {c:"Brazil",r:"South America",iso:"BRA",g:1.14,d:1.01,avg:1.08},
+  {c:"Argentina",r:"South America",iso:"ARG",g:0.89,d:0.82,avg:0.86},
+  {c:"Colombia",r:"South America",iso:"COL",g:0.64,d:0.54,avg:0.59},
+  {c:"Venezuela",r:"South America",iso:"VEN",g:0.02,d:0.01,avg:0.02},
+  {c:"Chile",r:"South America",iso:"CHL",g:1.41,d:1.07,avg:1.24},
+  {c:"Nigeria",r:"Africa",iso:"NGA",g:0.39,d:0.82,avg:0.60},
+  {c:"South Africa",r:"Africa",iso:"ZAF",g:1.13,d:1.16,avg:1.14},
+  {c:"Egypt",r:"Africa",iso:"EGY",g:0.29,d:0.23,avg:0.26},
+  {c:"Kenya",r:"Africa",iso:"KEN",g:1.32,d:1.22,avg:1.27},
+  {c:"Ethiopia",r:"Africa",iso:"ETH",g:0.78,d:0.74,avg:0.76},
+  {c:"Australia",r:"Oceania",iso:"AUS",g:1.18,d:1.42,avg:1.30},
+  {c:"New Zealand",r:"Oceania",iso:"NZL",g:1.65,d:1.28,avg:1.46},
+  {c:"Fiji",r:"Oceania",iso:"FJI",g:1.22,d:1.18,avg:1.20}
+];
+
+const ASIA = [
+  {c:"Pakistan",sr:"South Asia",g:0.82,d:0.84,lpg:0.82,inc:180,ai:7.3,imp:85,ref:450,ev:0.3,sub:true,subc:2.8,co2:42.5,wage:13.7},
+  {c:"India",sr:"South Asia",g:1.17,d:1.06,lpg:1.02,inc:280,ai:8.0,imp:85,ref:5340,ev:2.1,sub:false,subc:0,co2:320.0,wage:12.5},
+  {c:"Bangladesh",sr:"South Asia",g:1.05,d:0.91,lpg:0.95,inc:160,ai:5.1,imp:100,ref:33,ev:0.1,sub:true,subc:1.2,co2:15.8,wage:19.7},
+  {c:"Sri Lanka",sr:"South Asia",g:1.14,d:1.02,lpg:1.05,inc:210,ai:6.1,imp:100,ref:50,ev:0.2,sub:false,subc:0,co2:8.2,wage:16.3},
+  {c:"Nepal",sr:"South Asia",g:1.19,d:1.08,lpg:1.15,inc:120,ai:3.4,imp:100,ref:0,ev:0.5,sub:false,subc:0,co2:4.1,wage:29.8},
+  {c:"Afghanistan",sr:"South Asia",g:0.74,d:0.70,lpg:0.75,inc:60,ai:2.7,imp:100,ref:0,ev:0.0,sub:false,subc:0,co2:2.8,wage:37.0},
+  {c:"China",sr:"East Asia",g:1.24,d:1.08,lpg:0.78,inc:960,ai:25.8,imp:72,ref:17840,ev:9.4,sub:false,subc:0,co2:980.0,wage:3.9},
+  {c:"Japan",sr:"East Asia",g:1.28,d:1.15,lpg:1.15,inc:3200,ai:83.3,imp:99,ref:3520,ev:3.2,sub:true,subc:5.1,co2:185.0,wage:1.2},
+  {c:"South Korea",sr:"East Asia",g:1.42,d:1.26,lpg:0.96,inc:2800,ai:65.7,imp:97,ref:3330,ev:9.8,sub:false,subc:0,co2:98.0,wage:1.5},
+  {c:"Taiwan",sr:"East Asia",g:1.04,d:0.88,lpg:0.82,inc:2200,ai:70.5,imp:98,ref:1200,ev:4.5,sub:true,subc:1.8,co2:36.0,wage:1.4},
+  {c:"Mongolia",sr:"East Asia",g:0.98,d:0.95,lpg:0.88,inc:450,ai:15.3,imp:100,ref:0,ev:0.1,sub:false,subc:0,co2:3.2,wage:6.5},
+  {c:"Thailand",sr:"Southeast Asia",g:1.18,d:1.04,lpg:0.72,inc:580,ai:16.4,imp:62,ref:1340,ev:3.8,sub:true,subc:3.2,co2:78.0,wage:6.1},
+  {c:"Malaysia",sr:"Southeast Asia",g:0.50,d:0.80,lpg:0.48,inc:820,ai:54.7,imp:35,ref:770,ev:2.5,sub:true,subc:8.4,co2:55.0,wage:1.8},
+  {c:"Indonesia",sr:"Southeast Asia",g:0.79,d:0.74,lpg:0.65,inc:320,ai:13.5,imp:42,ref:1080,ev:0.4,sub:true,subc:12.5,co2:145.0,wage:7.4},
+  {c:"Vietnam",sr:"Southeast Asia",g:1.01,d:0.88,lpg:0.78,inc:280,ai:9.2,imp:60,ref:360,ev:0.6,sub:false,subc:0,co2:42.0,wage:10.8},
+  {c:"Philippines",sr:"Southeast Asia",g:1.14,d:1.02,lpg:0.88,inc:310,ai:9.1,imp:100,ref:280,ev:0.3,sub:false,subc:0,co2:35.0,wage:11.0},
+  {c:"Singapore",sr:"Southeast Asia",g:1.88,d:1.52,lpg:1.10,inc:4800,ai:85.1,imp:100,ref:1500,ev:5.2,sub:false,subc:0,co2:17.0,wage:1.2},
+  {c:"Cambodia",sr:"Southeast Asia",g:1.10,d:1.02,lpg:0.90,inc:180,ai:5.5,imp:100,ref:0,ev:0.0,sub:false,subc:0,co2:4.5,wage:18.3},
+  {c:"Myanmar",sr:"Southeast Asia",g:0.92,d:0.85,lpg:0.78,inc:110,ai:4.0,imp:55,ref:50,ev:0.0,sub:true,subc:0.5,co2:9.8,wage:25.1},
+  {c:"Laos",sr:"Southeast Asia",g:1.15,d:1.01,lpg:0.95,inc:160,ai:4.6,imp:100,ref:0,ev:0.0,sub:false,subc:0,co2:2.2,wage:21.6},
+  {c:"Brunei",sr:"Southeast Asia",g:0.31,d:0.19,lpg:0.28,inc:2200,ai:236.8,imp:0,ref:165,ev:0.2,sub:true,subc:0.4,co2:2.5,wage:0.4},
+  {c:"Timor-Leste",sr:"Southeast Asia",g:1.22,d:1.18,lpg:1.05,inc:120,ai:3.3,imp:100,ref:0,ev:0.0,sub:false,subc:0,co2:0.4,wage:30.5}
+];
+
+const SUBSIDY = [
+  {c:"Pakistan",iso:"PAK",gSub:true,dSub:true,type:"Partial",cost:2.8,gdp:1.1,mech:"Petroleum Levy + GST",reg:"OGRA"},
+  {c:"India",iso:"IND",gSub:false,dSub:false,type:"Deregulated",cost:0,gdp:0,mech:"Oil Marketing Companies",reg:"MoPNG"},
+  {c:"Bangladesh",iso:"BGD",gSub:true,dSub:true,type:"Full",cost:1.2,gdp:0.5,mech:"Fixed retail prices",reg:"BPC"},
+  {c:"China",iso:"CHN",gSub:false,dSub:true,type:"Ceiling",cost:0,gdp:0,mech:"NDRC price corridor",reg:"NDRC"},
+  {c:"Japan",iso:"JPN",gSub:true,dSub:false,type:"Partial",cost:5.1,gdp:2.8,mech:"Subsidy to wholesalers",reg:"METI"},
+  {c:"South Korea",iso:"KOR",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"Market-based",reg:"MOTIE"},
+  {c:"Thailand",iso:"THA",gSub:true,dSub:true,type:"Partial",cost:3.2,gdp:1.4,mech:"Oil Fund stabilization",reg:"EPPO"},
+  {c:"Malaysia",iso:"MYS",gSub:true,dSub:true,type:"Full",cost:8.4,gdp:3.8,mech:"BUDI95 program",reg:"MoF"},
+  {c:"Indonesia",iso:"IDN",gSub:true,dSub:true,type:"Partial",cost:12.5,gdp:5.2,mech:"Pertamina-administered",reg:"MEMR"},
+  {c:"Vietnam",iso:"VNM",gSub:false,dSub:true,type:"Stabilization",cost:0,gdp:0,mech:"Price stabilization fund",reg:"MoIT"},
+  {c:"Philippines",iso:"PHL",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"Fully deregulated",reg:"DOE"},
+  {c:"Singapore",iso:"SGP",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"No intervention",reg:"EMA"},
+  {c:"Myanmar",iso:"MMR",gSub:true,dSub:true,type:"Partial",cost:0.5,gdp:0.2,mech:"State-controlled",reg:"MOEE"},
+  {c:"Taiwan",iso:"TWN",gSub:true,dSub:false,type:"Partial",cost:1.8,gdp:0.8,mech:"CPC stabilization",reg:"MOEA"},
+  {c:"Brunei",iso:"BRN",gSub:true,dSub:true,type:"Full",cost:0.4,gdp:0.2,mech:"State-subsidized",reg:"JPKE"},
+  {c:"Cambodia",iso:"KHM",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"Market pricing",reg:"MME"},
+  {c:"Laos",iso:"LAO",gSub:false,dSub:false,type:"Stabilization",cost:0,gdp:0,mech:"Govt price cap",reg:"MEM"},
+  {c:"Nepal",iso:"NPL",gSub:false,dSub:true,type:"Partial",cost:0,gdp:0,mech:"NOC-administered",reg:"NOC"},
+  {c:"Mongolia",iso:"MNG",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"Free market",reg:"MoE"},
+  {c:"Afghanistan",iso:"AFG",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"Unregulated",reg:"N/A"},
+  {c:"Timor-Leste",iso:"TLS",gSub:false,dSub:false,type:"None",cost:0,gdp:0,mech:"Petroleum Fund model",reg:"MoF"},
+  {c:"Sri Lanka",iso:"LKA",gSub:false,dSub:false,type:"Deregulated",cost:0,gdp:0,mech:"Cost-reflective formula",reg:"CPC"}
+];
+
+const TAX = [
+  {c:"Pakistan",r:"South Asia",gTax:17,dTax:17,vat:17,excise:0.20,carbon:false,total:0.34,cat:"Low"},
+  {c:"India",r:"South Asia",gTax:52,dTax:47,vat:0,excise:0.42,carbon:false,total:0.61,cat:"High"},
+  {c:"Bangladesh",r:"South Asia",gTax:34,dTax:30,vat:15,excise:0.22,carbon:false,total:0.36,cat:"Moderate"},
+  {c:"China",r:"East Asia",gTax:26,dTax:24,vat:13,excise:0.22,carbon:false,total:0.32,cat:"Moderate"},
+  {c:"Japan",r:"East Asia",gTax:42,dTax:38,vat:10,excise:0.40,carbon:true,total:0.54,cat:"High"},
+  {c:"South Korea",r:"East Asia",gTax:52,dTax:38,vat:10,excise:0.52,carbon:false,total:0.74,cat:"High"},
+  {c:"Thailand",r:"Southeast Asia",gTax:27,dTax:15,vat:7,excise:0.19,carbon:false,total:0.32,cat:"Moderate"},
+  {c:"Malaysia",r:"Southeast Asia",gTax:0,dTax:0,vat:0,excise:0,carbon:false,total:0,cat:"Very Low"},
+  {c:"Indonesia",r:"Southeast Asia",gTax:5,dTax:5,vat:11,excise:0.06,carbon:false,total:0.04,cat:"Very Low"},
+  {c:"Singapore",r:"Southeast Asia",gTax:35,dTax:28,vat:9,excise:0.44,carbon:true,total:0.66,cat:"Moderate"},
+  {c:"Philippines",r:"Southeast Asia",gTax:18,dTax:16,vat:12,excise:0.14,carbon:false,total:0.21,cat:"Low"},
+  {c:"Vietnam",r:"Southeast Asia",gTax:32,dTax:28,vat:8,excise:0.22,carbon:false,total:0.32,cat:"Moderate"},
+  {c:"Saudi Arabia",r:"Middle East",gTax:15,dTax:5,vat:15,excise:0.06,carbon:false,total:0.09,cat:"Low"},
+  {c:"UAE",r:"Middle East",gTax:0,dTax:0,vat:5,excise:0,carbon:false,total:0.04,cat:"Very Low"},
+  {c:"Iran",r:"Middle East",gTax:0,dTax:0,vat:9,excise:0,carbon:false,total:0,cat:"Very Low"},
+  {c:"Turkey",r:"Middle East",gTax:59,dTax:42,vat:20,excise:0.52,carbon:false,total:0.71,cat:"Very High"},
+  {c:"United States",r:"North America",gTax:17,dTax:20,vat:0,excise:0.14,carbon:false,total:0.15,cat:"Low"},
+  {c:"Canada",r:"North America",gTax:33,dTax:30,vat:5,excise:0.28,carbon:true,total:0.40,cat:"Moderate"},
+  {c:"Mexico",r:"North America",gTax:20,dTax:18,vat:16,excise:0.16,carbon:false,total:0.23,cat:"Low"},
+  {c:"Brazil",r:"South America",gTax:28,dTax:25,vat:0,excise:0.24,carbon:false,total:0.32,cat:"Moderate"},
+  {c:"United Kingdom",r:"Europe",gTax:57,dTax:56,vat:20,excise:0.74,carbon:true,total:1.00,cat:"Very High"},
+  {c:"Germany",r:"Europe",gTax:55,dTax:47,vat:19,excise:0.72,carbon:true,total:1.00,cat:"High"},
+  {c:"France",r:"Europe",gTax:58,dTax:52,vat:20,excise:0.78,carbon:true,total:1.11,cat:"Very High"},
+  {c:"Italy",r:"Europe",gTax:56,dTax:48,vat:22,excise:0.76,carbon:true,total:1.05,cat:"Very High"},
+  {c:"Netherlands",r:"Europe",gTax:61,dTax:44,vat:21,excise:0.90,carbon:true,total:1.28,cat:"Very High"},
+  {c:"Norway",r:"Europe",gTax:55,dTax:50,vat:25,excise:0.82,carbon:true,total:1.14,cat:"High"},
+  {c:"Sweden",r:"Europe",gTax:55,dTax:52,vat:25,excise:0.78,carbon:true,total:0.98,cat:"High"},
+  {c:"Australia",r:"Oceania",gTax:33,dTax:33,vat:10,excise:0.31,carbon:false,total:0.39,cat:"Moderate"},
+  {c:"Nigeria",r:"Africa",gTax:0,dTax:0,vat:7.5,excise:0,carbon:false,total:0,cat:"Very Low"},
+  {c:"South Africa",r:"Africa",gTax:38,dTax:40,vat:15,excise:0.37,carbon:true,total:0.43,cat:"Moderate"},
+];
+
+const CRUDE = [
+  {y:2015,b:52.39,w:49.19,bY:-35.3,wY:-30.5,ev:"OPEC price war; US shale boom",sp:3.2},
+  {y:2016,b:44.05,w:44.22,bY:-15.9,wY:-10.1,ev:"OPEC+ production cut agreement",sp:-0.17},
+  {y:2017,b:54.75,w:51.86,bY:24.3,wY:17.2,ev:"OPEC+ cuts; demand recovery",sp:2.89},
+  {y:2018,b:71.34,w:64.58,bY:30.3,wY:24.6,ev:"US sanctions Iran; Venezuela crisis",sp:6.76},
+  {y:2019,b:64.21,w:57.31,bY:-10.0,wY:-11.3,ev:"US-China trade war",sp:6.90},
+  {y:2020,b:41.84,w:38.58,bY:-34.9,wY:-32.7,ev:"COVID-19 — effondrement demande",sp:3.26},
+  {y:2021,b:70.91,w:68.23,bY:69.5,wY:76.8,ev:"Reprise post-COVID; contraintes offre",sp:2.68},
+  {y:2022,b:100.93,w:94.25,bY:42.3,wY:38.1,ev:"Guerre Russie-Ukraine; crise énergie",sp:6.68},
+  {y:2023,b:82.62,w:77.70,bY:-18.1,wY:-17.6,ev:"Réouverture Chine; coupes OPEC+",sp:4.92},
+  {y:2024,b:80.76,w:75.82,bY:-2.3,wY:-2.4,ev:"Tensions Moyen-Orient; soft landing",sp:4.94},
+  {y:2025,b:69.50,w:64.27,bY:-13.9,wY:-15.2,ev:"Faible demande; surplus prévu",sp:5.23},
+  {y:2026,b:92.40,w:73.60,bY:33.0,wY:14.5,ev:"Crise Détroit Hormuz; conflit Iran",sp:18.8}
+];
+
+// Monthly trend pre-aggregated (yearly average per country)
+const TREND_ANNUAL = {
+  labels:[2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026],
+  Pakistan:[0.44,0.45,0.51,0.64,0.59,0.46,0.58,0.76,0.75,0.79,0.45,0.64],
+  India:[0.73,0.74,0.80,0.96,0.94,0.80,0.96,1.12,1.10,1.14,0.79,0.97],
+  China:[0.82,0.75,0.84,1.03,0.96,0.82,0.97,1.17,1.12,1.18,0.85,1.08],
+  Japan:[0.97,0.88,0.99,1.15,1.09,0.94,1.08,1.27,1.23,1.25,0.96,1.14],
+  Thailand:[0.71,0.64,0.73,0.90,0.84,0.70,0.83,1.00,0.96,1.00,0.74,0.91],
+  Malaysia:[0.33,0.27,0.30,0.36,0.35,0.28,0.33,0.42,0.40,0.45,0.33,0.38],
+  Indonesia:[0.52,0.47,0.54,0.64,0.60,0.52,0.62,0.74,0.73,0.76,0.52,0.65],
+  "Saudi Arabia":[0.42,0.39,0.43,0.53,0.51,0.44,0.53,0.64,0.62,0.60,0.44,0.58],
+  "United States":[0.49,0.47,0.52,0.64,0.60,0.49,0.61,0.92,0.80,0.85,0.52,0.76],
+  Germany:[1.17,1.07,1.16,1.37,1.29,1.10,1.28,1.68,1.70,1.75,1.23,1.65]
+};
+
+const COLORS = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6',
+                '#06b6d4','#ec4899','#f97316','#84cc16','#14b8a6'];
+
+// ════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════
+const PAGE_TITLES = {
+  overview:"Vue Globale — Prix des Carburants",
+  asia:"Analyse Approfondie — Asie",
+  subsidy:"Subventions & Politiques Énergétiques",
+  tax:"Fiscalité & Taxes Carburants",
+  trends:"Tendances & Corrélations Pétrole"
+};
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[id];
+}
+
+// ════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════
+const fmt = (v,dec=2)=>typeof v==='number'?'$'+v.toFixed(dec):v;
+const fmtPct = v=>(v>0?'+':'')+v.toFixed(1)+'%';
+const avg = arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
+
+function badgeSubType(t){
+  const m={Full:'green',Partial:'amber',Deregulated:'blue',
+           Stabilization:'purple',Ceiling:'purple',None:'gray'};
+  return `<span class="badge badge-${m[t]||'gray'}">${t}</span>`;
+}
+function badgeTaxCat(t){
+  const m={'Very High':'red',High:'amber',Moderate:'blue',Low:'green','Very Low':'gray'};
+  return `<span class="badge badge-${m[t]||'gray'}">${t}</span>`;
+}
+function boolBadge(v){
+  return v?'<span class="badge badge-green">✓ Oui</span>':'<span class="badge badge-red">✗ Non</span>';
+}
+
+// ════════════════════════════════════════════
+// PAGE 1 — VUE GLOBALE
+// ════════════════════════════════════════════
+let ovCharts={};
+
+function overviewFilters(){
+  const region = document.getElementById('ov-region').value;
+  const fuel   = document.getElementById('ov-fuel').value;
+  const data   = region==='all'?GLOBAL:GLOBAL.filter(d=>d.r===region);
+  const prices = data.map(d=>fuel==='gasoline'?d.g:d.d);
+
+  // KPIs
+  document.getElementById('kpi-avg-global').textContent = fmt(avg(prices));
+  const minD=data.reduce((a,b)=>(fuel==='gasoline'?b.g:b.d)<(fuel==='gasoline'?a.g:a.d)?b:a);
+  const maxD=data.reduce((a,b)=>(fuel==='gasoline'?b.g:b.d)>(fuel==='gasoline'?a.g:a.d)?b:a);
+  const minP = fuel==='gasoline'?minD.g:minD.d;
+  const maxP = fuel==='gasoline'?maxD.g:maxD.d;
+  document.getElementById('kpi-min').textContent = fmt(minP);
+  document.getElementById('kpi-min-country').textContent = minD.c;
+  document.getElementById('kpi-max').textContent = fmt(maxP);
+  document.getElementById('kpi-max-country').textContent = maxD.c;
+  document.getElementById('kpi-countries').textContent = data.length;
+  document.getElementById('kpi-range').textContent = fmt(maxP-minP);
+
+  // Bar chart — top 30 sorted
+  const sorted=[...data].sort((a,b)=>(fuel==='gasoline'?b.g-a.g:b.d-a.d)).slice(0,30);
+  const barLabels=sorted.map(d=>d.c);
+  const barVals  =sorted.map(d=>fuel==='gasoline'?d.g:d.d);
+  const barColors=barVals.map(v=>v>1.5?'#ef4444':v>1.0?'#f59e0b':v>0.5?'#2563eb':'#10b981');
+
+  if(ovCharts.bar){
+    ovCharts.bar.data.labels=barLabels;
+    ovCharts.bar.data.datasets[0].data=barVals;
+    ovCharts.bar.data.datasets[0].backgroundColor=barColors;
+    ovCharts.bar.options.plugins.title.text=fuel==='gasoline'?'Essence':'Diesel';
+    ovCharts.bar.update('none');
+  }
+
+  // Region doughnut
+  const regions=[...new Set(data.map(d=>d.r))];
+  const regAvg=regions.map(r=>{
+    const rd=data.filter(d=>d.r===r);
+    return {r,avg:avg(rd.map(d=>fuel==='gasoline'?d.g:d.d))};
+  });
+  if(ovCharts.donut){
+    ovCharts.donut.data.labels=regAvg.map(x=>x.r);
+    ovCharts.donut.data.datasets[0].data=regAvg.map(x=>+x.avg.toFixed(3));
+    ovCharts.donut.update('none');
+  }
+
+  // Gas vs Diesel by region
+  const allRegions=[...new Set(GLOBAL.map(d=>d.r))];
+  const gAvg=allRegions.map(r=>avg(data.filter(d=>d.r===r).map(d=>d.g)));
+  const dAvg=allRegions.map(r=>avg(data.filter(d=>d.r===r).map(d=>d.d)));
+  if(ovCharts.gasDiesel){
+    ovCharts.gasDiesel.data.labels=allRegions;
+    ovCharts.gasDiesel.data.datasets[0].data=gAvg.map(v=>isNaN(v)?null:+v.toFixed(3));
+    ovCharts.gasDiesel.data.datasets[1].data=dAvg.map(v=>isNaN(v)?null:+v.toFixed(3));
+    ovCharts.gasDiesel.update('none');
+  }
+
+  // Histogram
+  const bins=[0,0.5,1.0,1.5,2.0,2.5];
+  const hist=bins.slice(0,-1).map((_,i)=>prices.filter(p=>p>=bins[i]&&p<bins[i+1]).length);
+  hist.push(prices.filter(p=>p>=2.0).length);
+  if(ovCharts.hist){
+    ovCharts.hist.data.datasets[0].data=hist;
+    ovCharts.hist.update('none');
+  }
+
+  // Table
+  renderTable('tbl-overview-wrap',sorted,[
+    {l:'Pays',k:'c'},{l:'Région',k:'r'},{l:'Essence (USD/L)',k:'g',fmt:v=>fmt(v)},
+    {l:'Diesel (USD/L)',k:'d',fmt:v=>fmt(v)},{l:'Moy.',k:'avg',fmt:v=>fmt(v)}
+  ]);
+}
+
+function initOverview(){
+  const ctx1=document.getElementById('chart-country-bar').getContext('2d');
+  const sorted=[...GLOBAL].sort((a,b)=>b.g-a.g).slice(0,30);
+  const barVals=sorted.map(d=>d.g);
+  const barColors=barVals.map(v=>v>1.5?'#ef4444':v>1.0?'#f59e0b':v>0.5?'#2563eb':'#10b981');
+  ovCharts.bar=new Chart(ctx1,{
+    type:'bar',
+    data:{labels:sorted.map(d=>d.c),
+          datasets:[{label:'USD/L',data:barVals,backgroundColor:barColors,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.x.toFixed(3)+'/L'}}},
+      scales:{x:{beginAtZero:true,ticks:{callback:v=>'$'+v.toFixed(2)}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  const ctx2=document.getElementById('chart-region-doughnut').getContext('2d');
+  const regions=[...new Set(GLOBAL.map(d=>d.r))];
+  const regAvg=regions.map(r=>avg(GLOBAL.filter(d=>d.r===r).map(d=>d.g)));
+  ovCharts.donut=new Chart(ctx2,{
+    type:'doughnut',
+    data:{labels:regions,datasets:[{data:regAvg.map(v=>+v.toFixed(3)),
+      backgroundColor:COLORS.map(c=>c+'CC'),borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+      plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}},
+        tooltip:{callbacks:{label:c=>`${c.label}: $${c.parsed.toFixed(3)}/L`}}}}
+  });
+
+  const ctx3=document.getElementById('chart-gas-diesel-region').getContext('2d');
+  ovCharts.gasDiesel=new Chart(ctx3,{
+    type:'bar',
+    data:{labels:regions,datasets:[
+      {label:'Essence',data:regions.map(r=>+avg(GLOBAL.filter(d=>d.r===r).map(d=>d.g)).toFixed(3)),
+       backgroundColor:COLORS[0]+'CC',borderRadius:3},
+      {label:'Diesel',data:regions.map(r=>+avg(GLOBAL.filter(d=>d.r===r).map(d=>d.d)).toFixed(3)),
+       backgroundColor:COLORS[2]+'CC',borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(3)+'/L'}}},
+      scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{callback:v=>'$'+v}}}}
+  });
+
+  const ctx4=document.getElementById('chart-histogram').getContext('2d');
+  const bins=[0,0.5,1.0,1.5,2.0,2.5];
+  const hist=bins.slice(0,-1).map((_,i)=>GLOBAL.filter(d=>d.g>=bins[i]&&d.g<bins[i+1]).length);
+  hist.push(GLOBAL.filter(d=>d.g>=2.0).length);
+  const histLabels=['<0.5','0.5-1.0','1.0-1.5','1.5-2.0','≥2.0'];
+  ovCharts.hist=new Chart(ctx4,{
+    type:'bar',
+    data:{labels:histLabels,
+          datasets:[{label:'Nb pays',data:hist,
+            backgroundColor:['#10b981','#2563eb','#f59e0b','#ef4444','#8b5cf6'].map(c=>c+'CC'),
+            borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y} pays`}}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:5}}}}
+  });
+
+  // Init KPIs & table
+  overviewFilters();
+}
+
+// ════════════════════════════════════════════
+// PAGE 2 — ASIE
+// ════════════════════════════════════════════
+let asCharts={};
+
+function asiaFilters(){
+  const sr  = document.getElementById('as-region').value;
+  const sub = document.getElementById('as-subsidy').value;
+  let data = sr==='all'?ASIA:ASIA.filter(d=>d.sr===sr);
+  if(sub!=='all') data=data.filter(d=>sub==='1'?d.sub:!d.sub);
+
+  // KPIs
+  document.getElementById('kpi-asia-avg').textContent = fmt(avg(data.map(d=>d.g)));
+  const afford = data.filter(d=>d.ai).map(d=>d.ai);
+  document.getElementById('kpi-asia-afford').textContent = avg(afford).toFixed(1);
+  document.getElementById('kpi-asia-ev').textContent = avg(data.map(d=>d.ev)).toFixed(2)+'%';
+  document.getElementById('kpi-asia-co2').textContent = data.reduce((a,b)=>a+b.co2,0).toFixed(0)+' Mt';
+  document.getElementById('kpi-asia-wage').textContent = avg(data.map(d=>d.wage)).toFixed(1)+'%';
+
+  const sorted=[...data].sort((a,b)=>b.ai-a.ai);
+
+  // Affordability bar
+  if(asCharts.afford){
+    asCharts.afford.data.labels=sorted.map(d=>d.c);
+    asCharts.afford.data.datasets[0].data=sorted.map(d=>d.ai);
+    asCharts.afford.update('none');
+  }
+
+  // Scatter: income vs price
+  if(asCharts.scatter){
+    asCharts.scatter.data.datasets[0].data=data.map(d=>({x:d.inc,y:d.g,label:d.c}));
+    asCharts.scatter.update('none');
+  }
+
+  // EV bar
+  const evSort=[...data].sort((a,b)=>b.ev-a.ev);
+  if(asCharts.ev){
+    asCharts.ev.data.labels=evSort.map(d=>d.c);
+    asCharts.ev.data.datasets[0].data=evSort.map(d=>d.ev);
+    asCharts.ev.update('none');
+  }
+
+  // Import dependency
+  const impSort=[...data].sort((a,b)=>b.imp-a.imp);
+  if(asCharts.imp){
+    asCharts.imp.data.labels=impSort.map(d=>d.c);
+    asCharts.imp.data.datasets[0].data=impSort.map(d=>d.imp);
+    asCharts.imp.update('none');
+  }
+
+  // Wage %
+  const wSort=[...data].sort((a,b)=>b.wage-a.wage);
+  if(asCharts.wage){
+    asCharts.wage.data.labels=wSort.map(d=>d.c);
+    asCharts.wage.data.datasets[0].data=wSort.map(d=>d.wage);
+    asCharts.wage.update('none');
+  }
+
+  renderTable('tbl-asia-wrap',data,[
+    {l:'Pays',k:'c'},{l:'Sous-région',k:'sr'},
+    {l:'Essence',k:'g',fmt:v=>fmt(v)},{l:'Diesel',k:'d',fmt:v=>fmt(v)},
+    {l:'Revenu moy.',k:'inc',fmt:v=>'$'+v},
+    {l:'Affordability',k:'ai',fmt:v=>v.toFixed(1)},
+    {l:'Dep. Import %',k:'imp',fmt:v=>v+'%'},
+    {l:'VE %',k:'ev',fmt:v=>v.toFixed(1)+'%'},
+    {l:'CO₂ Mt',k:'co2',fmt:v=>v.toFixed(1)},
+    {l:'% Salaire',k:'wage',fmt:v=>v.toFixed(1)+'%'},
+    {l:'Subvention',k:'sub',fmt:v=>boolBadge(v)}
+  ]);
+}
+
+function initAsia(){
+  const sorted=[...ASIA].sort((a,b)=>b.ai-a.ai);
+
+  const ctx1=document.getElementById('chart-asia-afford').getContext('2d');
+  asCharts.afford=new Chart(ctx1,{
+    type:'bar',
+    data:{labels:sorted.map(d=>d.c),
+      datasets:[{label:'Indice accessibilité',data:sorted.map(d=>d.ai),
+        backgroundColor:sorted.map(d=>d.ai>50?'#10b981CC':d.ai>15?'#2563ebCC':d.ai>5?'#f59e0bCC':'#ef4444CC'),
+        borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true},y:{ticks:{font:{size:9}}}}}
+  });
+
+  const ctx2=document.getElementById('chart-asia-scatter').getContext('2d');
+  asCharts.scatter=new Chart(ctx2,{
+    type:'scatter',
+    data:{datasets:[{label:'Pays',
+      data:ASIA.map(d=>({x:d.inc,y:d.g,label:d.c})),
+      backgroundColor:COLORS.map(c=>c+'AA'),
+      pointRadius:7,pointHoverRadius:10}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{tooltip:{callbacks:{label:c=>`${c.raw.label}: $${c.raw.y.toFixed(3)}/L | $${c.raw.x}/mois`}}},
+      scales:{
+        x:{title:{display:true,text:'Revenu mensuel moyen (USD)'},beginAtZero:true},
+        y:{title:{display:true,text:'Prix essence (USD/L)'},beginAtZero:true}
+      }}
+  });
+
+  const evSort=[...ASIA].sort((a,b)=>b.ev-a.ev);
+  const ctx3=document.getElementById('chart-asia-ev').getContext('2d');
+  asCharts.ev=new Chart(ctx3,{
+    type:'bar',
+    data:{labels:evSort.map(d=>d.c),
+      datasets:[{label:'% VE',data:evSort.map(d=>d.ev),backgroundColor:'#10b981CC',borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:9}}}}}
+  });
+
+  const impSort=[...ASIA].sort((a,b)=>b.imp-a.imp);
+  const ctx4=document.getElementById('chart-asia-import').getContext('2d');
+  asCharts.imp=new Chart(ctx4,{
+    type:'bar',
+    data:{labels:impSort.map(d=>d.c),
+      datasets:[{label:'% dépendance',data:impSort.map(d=>d.imp),
+        backgroundColor:impSort.map(d=>d.imp===100?'#ef4444CC':'#f59e0bCC'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:9}}}}}
+  });
+
+  const wSort=[...ASIA].sort((a,b)=>b.wage-a.wage);
+  const ctx5=document.getElementById('chart-asia-wage').getContext('2d');
+  asCharts.wage=new Chart(ctx5,{
+    type:'bar',
+    data:{labels:wSort.map(d=>d.c),
+      datasets:[{label:'% salaire journée',data:wSort.map(d=>d.wage),
+        backgroundColor:wSort.map(d=>d.wage>20?'#ef4444CC':d.wage>10?'#f59e0bCC':'#10b981CC'),
+        borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:9}}}}}
+  });
+
+  asiaFilters();
+}
+
+// ════════════════════════════════════════════
+// PAGE 3 — SUBVENTIONS
+// ════════════════════════════════════════════
+let subCharts={};
+
+function subsidyFilters(){
+  const type=document.getElementById('sub-type').value;
+  const data=type==='all'?SUBSIDY:SUBSIDY.filter(d=>d.type===type);
+
+  const withSub=data.filter(d=>d.gSub||d.dSub);
+  const totalCost=withSub.reduce((a,b)=>a+b.cost,0);
+  const avgGdp=withSub.filter(d=>d.gdp>0).reduce((a,b)=>a+b.gdp,0)/withSub.filter(d=>d.gdp>0).length||0;
+  const dereg=data.filter(d=>d.type==='Deregulated'||d.type==='None').length;
+
+  document.getElementById('kpi-sub-total').textContent = '$'+totalCost.toFixed(1)+'B';
+  document.getElementById('kpi-sub-count').textContent = withSub.length;
+  document.getElementById('kpi-sub-gdp').textContent   = avgGdp.toFixed(2)+'%';
+  document.getElementById('kpi-sub-dereg').textContent = dereg;
+
+  // Cost bar
+  const costData=[...data].filter(d=>d.cost>0).sort((a,b)=>b.cost-a.cost);
+  if(subCharts.cost){
+    subCharts.cost.data.labels=costData.map(d=>d.c);
+    subCharts.cost.data.datasets[0].data=costData.map(d=>d.cost);
+    subCharts.cost.update('none');
+  }
+
+  // Type doughnut
+  const types=['Full','Partial','Stabilization','Ceiling','Deregulated','None'];
+  const typeCounts=types.map(t=>data.filter(d=>d.type===t).length);
+  if(subCharts.type){
+    subCharts.type.data.datasets[0].data=typeCounts;
+    subCharts.type.update('none');
+  }
+
+  // GDP bar
+  const gdpData=[...data].filter(d=>d.gdp>0).sort((a,b)=>b.gdp-a.gdp);
+  if(subCharts.gdp){
+    subCharts.gdp.data.labels=gdpData.map(d=>d.c);
+    subCharts.gdp.data.datasets[0].data=gdpData.map(d=>d.gdp);
+    subCharts.gdp.update('none');
+  }
+
+  // Price compare
+  const pData=[...data].filter(d=>d.gSub||d.dSub||d.type==='Deregulated'||d.type==='None');
+  const gPrices=pData.map(d=>{
+    const match=GLOBAL.find(g=>g.iso===d.iso);
+    return match?match.g:null;
+  });
+  if(subCharts.pCmp){
+    subCharts.pCmp.data.labels=pData.map(d=>d.c);
+    subCharts.pCmp.data.datasets[0].data=gPrices;
+    subCharts.pCmp.data.datasets[0].backgroundColor=pData.map(d=>(d.gSub)?'#f59e0bCC':'#2563ebCC');
+    subCharts.pCmp.update('none');
+  }
+
+  renderTable('tbl-sub-wrap',data,[
+    {l:'Pays',k:'c'},{l:'Type',k:'type',fmt:badgeSubType},
+    {l:'Essence',k:'gSub',fmt:boolBadge},{l:'Diesel',k:'dSub',fmt:boolBadge},
+    {l:'Coût (Mrd $)',k:'cost',fmt:v=>v>0?'$'+v.toFixed(1)+'B':'—'},
+    {l:'% PIB',k:'gdp',fmt:v=>v>0?v.toFixed(2)+'%':'—'},
+    {l:'Mécanisme',k:'mech'},{l:'Régulateur',k:'reg'}
+  ]);
+}
+
+function initSubsidy(){
+  const costData=[...SUBSIDY].filter(d=>d.cost>0).sort((a,b)=>b.cost-a.cost);
+
+  const ctx1=document.getElementById('chart-sub-cost').getContext('2d');
+  subCharts.cost=new Chart(ctx1,{
+    type:'bar',
+    data:{labels:costData.map(d=>d.c),
+      datasets:[{label:'Mrd USD',data:costData.map(d=>d.cost),
+        backgroundColor:costData.map(d=>d.cost>5?'#ef4444CC':d.cost>2?'#f59e0bCC':'#2563ebCC'),
+        borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(1)+' Mrd USD'}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v+'B'}}}}
+  });
+
+  const ctx2=document.getElementById('chart-sub-type').getContext('2d');
+  const types=['Full','Partial','Stabilization','Ceiling','Deregulated','None'];
+  const typeCounts=types.map(t=>SUBSIDY.filter(d=>d.type===t).length);
+  subCharts.type=new Chart(ctx2,{
+    type:'doughnut',
+    data:{labels:types,datasets:[{data:typeCounts,
+      backgroundColor:['#ef4444CC','#f59e0bCC','#8b5cf6CC','#06b6d4CC','#10b981CC','#94a3b8CC'],
+      borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'50%',
+      plugins:{legend:{position:'right',labels:{font:{size:11}}}}}
+  });
+
+  const gdpData=[...SUBSIDY].filter(d=>d.gdp>0).sort((a,b)=>b.gdp-a.gdp);
+  const ctx3=document.getElementById('chart-sub-gdp').getContext('2d');
+  subCharts.gdp=new Chart(ctx3,{
+    type:'bar',
+    data:{labels:gdpData.map(d=>d.c),
+      datasets:[{label:'% PIB',data:gdpData.map(d=>d.gdp),
+        backgroundColor:gdpData.map(d=>d.gdp>3?'#ef4444CC':d.gdp>1?'#f59e0bCC':'#2563ebCC'),
+        borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}
+  });
+
+  const subPrices=SUBSIDY.map(d=>{const g=GLOBAL.find(x=>x.iso===d.iso);return g?g.g:null;});
+  const ctx4=document.getElementById('chart-sub-price-compare').getContext('2d');
+  subCharts.pCmp=new Chart(ctx4,{
+    type:'bar',
+    data:{labels:SUBSIDY.map(d=>d.c),
+      datasets:[{label:'Prix essence (USD/L)',data:subPrices,
+        backgroundColor:SUBSIDY.map(d=>d.gSub?'#f59e0bCC':'#2563ebCC'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>`$${c.parsed.y.toFixed(3)}/L`}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v}},
+               x:{ticks:{font:{size:9}}}}}
+  });
+
+  subsidyFilters();
+}
+
+// ════════════════════════════════════════════
+// PAGE 4 — FISCALITÉ
+// ════════════════════════════════════════════
+let taxCharts={};
+
+function taxFilters(){
+  const cat   =document.getElementById('tax-cat').value;
+  const region=document.getElementById('tax-region').value;
+  let data=TAX;
+  if(cat!=='all') data=data.filter(d=>d.cat===cat);
+  if(region!=='all') data=data.filter(d=>d.r.includes(region)||d.r===region);
+
+  const maxD=data.reduce((a,b)=>b.total>a.total?b:a,{total:0});
+  document.getElementById('kpi-tax-max').textContent='$'+maxD.total.toFixed(2);
+  document.getElementById('kpi-tax-max-country').textContent=maxD.c||'—';
+  document.getElementById('kpi-tax-avg-pct').textContent=avg(data.map(d=>d.gTax)).toFixed(1)+'%';
+  document.getElementById('kpi-tax-avg-usd').textContent='$'+avg(data.map(d=>d.total)).toFixed(3);
+  document.getElementById('kpi-tax-carbon').textContent=data.filter(d=>d.carbon).length;
+
+  const sorted=[...data].sort((a,b)=>b.total-a.total);
+  if(taxCharts.total){
+    taxCharts.total.data.labels=sorted.map(d=>d.c);
+    taxCharts.total.data.datasets[0].data=sorted.map(d=>d.total);
+    taxCharts.total.data.datasets[0].backgroundColor=sorted.map(d=>
+      d.cat==='Very High'?'#ef4444CC':d.cat==='High'?'#f59e0bCC':d.cat==='Moderate'?'#2563ebCC':'#10b981CC');
+    taxCharts.total.update('none');
+  }
+
+  const cats=['Very High','High','Moderate','Low','Very Low'];
+  const catCounts=cats.map(c=>data.filter(d=>d.cat===c).length);
+  if(taxCharts.catDonut){
+    taxCharts.catDonut.data.datasets[0].data=catCounts;
+    taxCharts.catDonut.update('none');
+  }
+
+  const top15=[...data].sort((a,b)=>b.gTax-a.gTax).slice(0,15);
+  if(taxCharts.gasDiesel){
+    taxCharts.gasDiesel.data.labels=top15.map(d=>d.c);
+    taxCharts.gasDiesel.data.datasets[0].data=top15.map(d=>d.gTax);
+    taxCharts.gasDiesel.data.datasets[1].data=top15.map(d=>d.dTax);
+    taxCharts.gasDiesel.update('none');
+  }
+
+  const topEx=[...data].sort((a,b)=>b.excise-a.excise).slice(0,15);
+  if(taxCharts.stacked){
+    taxCharts.stacked.data.labels=topEx.map(d=>d.c);
+    taxCharts.stacked.data.datasets[0].data=topEx.map(d=>d.excise);
+    taxCharts.stacked.data.datasets[1].data=topEx.map(d=>+(d.vat/100*d.total).toFixed(3));
+    taxCharts.stacked.update('none');
+  }
+
+  renderTable('tbl-tax-wrap',sorted,[
+    {l:'Pays',k:'c'},{l:'Région',k:'r'},
+    {l:'Taxe essence %',k:'gTax',fmt:v=>v+'%'},
+    {l:'Taxe diesel %',k:'dTax',fmt:v=>v+'%'},
+    {l:'TVA %',k:'vat',fmt:v=>v+'%'},
+    {l:'Accise ($/L)',k:'excise',fmt:v=>'$'+v.toFixed(3)},
+    {l:'Total ($/L)',k:'total',fmt:v=>'$'+v.toFixed(3)},
+    {l:'Taxe carbone',k:'carbon',fmt:boolBadge},
+    {l:'Catégorie',k:'cat',fmt:badgeTaxCat}
+  ]);
+}
+
+function initTax(){
+  const sorted=[...TAX].sort((a,b)=>b.total-a.total);
+
+  const ctx1=document.getElementById('chart-tax-total').getContext('2d');
+  taxCharts.total=new Chart(ctx1,{
+    type:'bar',
+    data:{labels:sorted.map(d=>d.c),
+      datasets:[{label:'Total taxe USD/L',data:sorted.map(d=>d.total),
+        backgroundColor:sorted.map(d=>d.cat==='Very High'?'#ef4444CC':d.cat==='High'?'#f59e0bCC':d.cat==='Moderate'?'#2563ebCC':'#10b981CC'),
+        borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(3)+'/L'}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v}},
+               x:{ticks:{font:{size:9},maxRotation:45}}}}
+  });
+
+  const ctx2=document.getElementById('chart-tax-cat-doughnut').getContext('2d');
+  const cats=['Very High','High','Moderate','Low','Very Low'];
+  taxCharts.catDonut=new Chart(ctx2,{
+    type:'doughnut',
+    data:{labels:cats,datasets:[{
+      data:cats.map(c=>TAX.filter(d=>d.cat===c).length),
+      backgroundColor:['#ef4444CC','#f59e0bCC','#2563ebCC','#10b981CC','#94a3b8CC'],
+      borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'50%',
+      plugins:{legend:{position:'right',labels:{font:{size:11}}},
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed} pays`}}}}
+  });
+
+  const top15=[...TAX].sort((a,b)=>b.gTax-a.gTax).slice(0,15);
+  const ctx3=document.getElementById('chart-tax-gasdiesel').getContext('2d');
+  taxCharts.gasDiesel=new Chart(ctx3,{
+    type:'bar',
+    data:{labels:top15.map(d=>d.c),
+      datasets:[
+        {label:'Taxe essence %',data:top15.map(d=>d.gTax),backgroundColor:COLORS[0]+'CC',borderRadius:2},
+        {label:'Taxe diesel %',data:top15.map(d=>d.dTax),backgroundColor:COLORS[2]+'CC',borderRadius:2}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}},
+               x:{ticks:{font:{size:9},maxRotation:45}}}}
+  });
+
+  const topEx=[...TAX].sort((a,b)=>b.excise-a.excise).slice(0,15);
+  const ctx4=document.getElementById('chart-tax-stacked').getContext('2d');
+  taxCharts.stacked=new Chart(ctx4,{
+    type:'bar',
+    data:{labels:topEx.map(d=>d.c),
+      datasets:[
+        {label:'Accise (USD/L)',data:topEx.map(d=>d.excise),backgroundColor:COLORS[4]+'CC',borderRadius:2},
+        {label:'TVA (equiv. USD/L)',data:topEx.map(d=>+(d.vat/100*d.total).toFixed(3)),backgroundColor:COLORS[1]+'CC',borderRadius:2}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,stacked:true,
+      scales:{x:{stacked:true,ticks:{font:{size:9},maxRotation:45}},
+               y:{stacked:true,beginAtZero:true,ticks:{callback:v=>'$'+v}}}}}
+  });
+
+  taxFilters();
+}
+
+// ════════════════════════════════════════════
+// PAGE 5 — TENDANCES
+// ════════════════════════════════════════════
+let trendCharts={};
+
+function trendFilters(){
+  const country=document.getElementById('trend-country').value;
+  const period =document.getElementById('trend-year').value;
+  const years  =period==='all'?TREND_ANNUAL.labels
+                               :period.split(',').map(Number);
+
+  const idxs=years.map(y=>TREND_ANNUAL.labels.indexOf(y)).filter(i=>i>=0);
+  const filtLabels=idxs.map(i=>TREND_ANNUAL.labels[i]);
+
+  const countries=country==='all'
+    ?['Pakistan','India','China','Japan','Malaysia','Germany','United States']
+    :[country];
+
+  if(trendCharts.monthly){
+    trendCharts.monthly.data.labels=filtLabels;
+    trendCharts.monthly.data.datasets=countries.map((c,i)=>({
+      label:c,
+      data:idxs.map(idx=>TREND_ANNUAL[c]?.[idx]??null),
+      borderColor:COLORS[i%COLORS.length],
+      backgroundColor:'transparent',
+      borderWidth:2,tension:0.3,pointRadius:3
+    }));
+    trendCharts.monthly.update('none');
+  }
+}
+
+function initTrends(){
+  const years=CRUDE.map(d=>d.y);
+
+  // Brent + WTI annual
+  const ctx1=document.getElementById('chart-crude-annual').getContext('2d');
+  trendCharts.crude=new Chart(ctx1,{
+    type:'line',
+    data:{labels:years,datasets:[
+      {label:'Brent',data:CRUDE.map(d=>d.b),borderColor:COLORS[0],backgroundColor:COLORS[0]+'20',
+       fill:true,borderWidth:2.5,tension:0.3,pointRadius:4},
+      {label:'WTI',data:CRUDE.map(d=>d.w),borderColor:COLORS[3],backgroundColor:'transparent',
+       borderWidth:2,tension:0.3,pointRadius:4,borderDash:[4,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top'},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: $${c.parsed.y.toFixed(2)}/bbl`}}},
+      scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+v}},x:{grid:{display:false}}}}
+  });
+
+  // YoY bar with color
+  const ctx2=document.getElementById('chart-crude-yoy').getContext('2d');
+  trendCharts.yoy=new Chart(ctx2,{
+    type:'bar',
+    data:{labels:CRUDE.map(d=>d.y),
+      datasets:[{label:'Brent YoY %',data:CRUDE.map(d=>d.bY),
+        backgroundColor:CRUDE.map(d=>d.bY>0?'#10b981CC':'#ef4444CC'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{
+          label:c=>fmtPct(c.parsed.y),
+          afterLabel:c=>CRUDE[c.dataIndex].ev
+        }}},
+      scales:{y:{ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}
+  });
+
+  // Monthly trend (annual avg)
+  const ctx3=document.getElementById('chart-monthly-trend').getContext('2d');
+  const defCounts=['Pakistan','India','China','Japan','Malaysia','Germany','United States'];
+  trendCharts.monthly=new Chart(ctx3,{
+    type:'line',
+    data:{labels:TREND_ANNUAL.labels,
+      datasets:defCounts.map((c,i)=>({
+        label:c,data:TREND_ANNUAL[c],
+        borderColor:COLORS[i%COLORS.length],backgroundColor:'transparent',
+        borderWidth:2,tension:0.3,pointRadius:2
+      }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'top',labels:{font:{size:10}}}},
+      scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+v}},x:{grid:{display:false}}}}
+  });
+
+  // Spread bar
+  const ctx4=document.getElementById('chart-spread').getContext('2d');
+  trendCharts.spread=new Chart(ctx4,{
+    type:'bar',
+    data:{labels:years,
+      datasets:[{label:'Spread Brent-WTI',data:CRUDE.map(d=>d.sp),
+        backgroundColor:CRUDE.map(d=>d.sp>10?'#ef4444CC':d.sp>5?'#f59e0bCC':d.sp>0?'#2563ebCC':'#94a3b8CC'),
+        borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toFixed(2)+'/bbl'}}},
+      scales:{y:{ticks:{callback:v=>'$'+v}},x:{grid:{display:false}}}}
+  });
+
+  // Table crude oil
+  renderTable('tbl-crude-wrap',CRUDE,[
+    {l:'Année',k:'y'},{l:'Brent (USD/bbl)',k:'b',fmt:v=>'$'+v.toFixed(2)},
+    {l:'WTI (USD/bbl)',k:'w',fmt:v=>'$'+v.toFixed(2)},
+    {l:'Spread ($)',k:'sp',fmt:v=>'$'+v.toFixed(2)},
+    {l:'Brent YoY %',k:'bY',fmt:v=>`<span style="color:${v>0?'#10b981':'#ef4444'}">${fmtPct(v)}</span>`},
+    {l:'WTI YoY %',k:'wY',fmt:v=>`<span style="color:${v>0?'#10b981':'#ef4444'}">${fmtPct(v)}</span>`},
+    {l:'Événement clé',k:'ev'}
+  ]);
+}
+
+// ════════════════════════════════════════════
+// GENERIC TABLE RENDERER
+// ════════════════════════════════════════════
+function renderTable(containerId,data,cols){
+  let html='<table><thead><tr>';
+  cols.forEach(col=>html+=`<th>${col.l}</th>`);
+  html+='</tr></thead><tbody>';
+  data.forEach(row=>{
+    html+='<tr>';
+    cols.forEach(col=>{
+      const v=row[col.k];
+      html+=`<td>${col.fmt?col.fmt(v):(v===null||v===undefined?'—':v)}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById(containerId).innerHTML=html;
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  initOverview();
+  initAsia();
+  initSubsidy();
+  initTax();
+  initTrends();
+});
+</script>
+</body>
+</html>
