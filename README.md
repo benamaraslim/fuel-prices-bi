@@ -8,15 +8,20 @@ A complete **Power BI analytics project** tracking global fuel prices across 150
 
 ## Screenshots
 
-### HTML Dashboard Preview
-![Dashboard Overview](screenshots/dashboard_overview.png)
-![Trends Page](screenshots/dashboard_trends.png)
+### Vue Globale — Prix des Carburants
+![Vue Globale](screenshots/dashboard_overview.png)
 
-### Power BI Report Pages
-![Vue Globale](screenshots/powerbi_vue_globale.png)
-![Tendances](screenshots/powerbi_tendances.png)
-![Asie](screenshots/powerbi_asie.png)
-![Fiscalite](screenshots/powerbi_fiscalite.png)
+### Analyse Asie
+![Analyse Asie](screenshots/dashboard_asie.png)
+
+### Subventions
+![Subventions](screenshots/dashboard_subventions.png)
+
+### Fiscalité
+![Fiscalité](screenshots/dashboard_fiscalite.png)
+
+### Tendances
+![Tendances](screenshots/dashboard_tendances.png)
 
 ---
 
