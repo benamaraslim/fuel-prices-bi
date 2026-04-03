@@ -6,6 +6,56 @@ A complete **Power BI analytics project** tracking global fuel prices across 150
 
 ---
 
+## Purpose & Business Decisions
+
+This dashboard transforms raw fuel price data from 60 countries into **actionable intelligence** for three types of stakeholders.
+
+### Target Users
+
+| User | Use Case |
+|------|----------|
+| **Governments / Policy makers** | Benchmark taxation, evaluate subsidy costs, plan energy transition |
+| **Economic / Financial analysts** | Track Brent ↔ pump price correlation, assess oil shock impact on economies |
+| **Transport & Logistics companies** | Optimize routing by fuel cost, anticipate price increases, plan fleet electrification |
+
+---
+
+### Key Decisions Enabled
+
+**Government — Subsidy Policy**
+- 12 Asian countries spend **$35.9B/year** on subsidies → decide whether to maintain, reduce, or better target (e.g. means-tested subsidies instead of universal)
+- Brunei subsidizes at $0.31/L → sustainable while oil revenues hold, but structurally risky long-term
+
+**Government — Taxation & Carbon Policy**
+- France (58% tax rate) generates massive revenue but risks energy poverty → decide on price cap or energy voucher compensation
+- Only 11 countries have a carbon tax → the other 49 can use this data to model the impact before adopting one
+
+**Government — Energy Transition**
+- Asia: **2,087 MT CO2** from transport with only **1.96% EV penetration** → accelerate EV purchase incentives
+- South Korea (10%) and China (9.4%) prove that strong policy produces results → replicable model
+
+**Companies — Logistics & Routing**
+- Route freight through low-fuel-cost countries (Brunei $0.31, Malaysia $0.50) → reduce operating costs
+- Avoid Netherlands/Norway ($2.10/L) for long-haul land routes
+
+**Companies — Investment & Hedging**
+- Brent/WTI spread of **$18.80** → arbitrage opportunity for oil traders
+- YoY +8.4% → anticipate rising logistics costs and reprice contracts accordingly
+- Brent/pump correlation r=0.87 → every +$10/bbl Brent = +$0.08/L at the pump → hedge via futures contracts
+- MoM +1.1% sustained → ~14% annual increase → negotiate fixed-price supply agreements now
+
+**Companies — Fleet Decisions**
+- Countries with high EV adoption (South Korea, China) → invest in electric fleets before fuel costs rise further
+- Countries with carbon tax → diesel will keep getting more expensive → switch to LNG or EV
+
+---
+
+### One-Line Summary
+
+> This dashboard answers **"Where, when, and how much to invest in or tax fuel"** — with hard numbers to justify every decision in front of shareholders, ministers, or a board of directors.
+
+---
+
 ## Data Analysis & Key Findings
 
 ### Vue Globale — Prix des Carburants
